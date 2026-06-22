@@ -61,6 +61,232 @@
       line-height:1;
       box-shadow:0 5px 12px rgba(37,99,235,.14);
     }
+
+    /* v207: restore task calendar size and tidy oversized inner mobile controls */
+    @media (max-width: 700px){
+      .tasks-calendar-card{
+        padding:12px!important;
+      }
+      .tasks-calendar-heading{
+        margin-bottom:8px!important;
+        font-size:15px!important;
+      }
+      .task-calendar-head{
+        margin-bottom:8px!important;
+      }
+      .task-calendar-title{
+        font-size:15px!important;
+      }
+      .task-calendar-nav{
+        width:32px!important;
+        height:32px!important;
+        min-height:32px!important;
+        border-radius:10px!important;
+      }
+      .task-calendar-grid{
+        gap:4px!important;
+      }
+      .task-calendar-day-name{
+        font-size:11px!important;
+        padding:3px 0!important;
+      }
+      .task-calendar-day{
+        min-height:44px!important;
+        border-radius:11px!important;
+        padding:4px 2px!important;
+        gap:2px!important;
+        font-size:12px!important;
+      }
+      .task-calendar-count,
+      .task-calendar-bell{
+        min-height:11px!important;
+        font-size:9px!important;
+      }
+      .tasks-calendar-note{
+        display:block!important;
+        margin-top:8px!important;
+        font-size:12px!important;
+        line-height:1.35!important;
+      }
+
+      .contracts-layout,
+      .email-txt-layout{
+        gap:6px!important;
+      }
+      .contracts-sidebar,
+      .contracts-panel,
+      .email-txt-sidebar,
+      .email-txt-panel{
+        margin:6px!important;
+        padding:8px!important;
+        border-radius:11px!important;
+        min-width:0!important;
+        max-width:100%!important;
+        overflow:hidden!important;
+      }
+      .contracts-button-list,
+      .email-txt-template-tabs{
+        display:grid!important;
+        grid-template-columns:1fr!important;
+        gap:5px!important;
+        min-width:0!important;
+        width:100%!important;
+      }
+      .contract-button,
+      .email-txt-template-tab{
+        width:100%!important;
+        max-width:100%!important;
+        min-width:0!important;
+        min-height:30px!important;
+        padding:6px 8px!important;
+        border-radius:9px!important;
+        font-size:12px!important;
+        line-height:1.2!important;
+        overflow:hidden!important;
+      }
+      .contract-button{
+        display:grid!important;
+        grid-template-columns:minmax(0,1fr) auto!important;
+        gap:6px!important;
+      }
+      .contract-button-name,
+      .contract-button-meta{
+        min-width:0!important;
+        overflow:hidden!important;
+        text-overflow:ellipsis!important;
+        white-space:nowrap!important;
+      }
+      .email-txt-template-tab{
+        white-space:normal!important;
+        text-align:left!important;
+      }
+      .email-txt-template-actions,
+      .email-txt-actions{
+        display:grid!important;
+        grid-template-columns:1fr 1fr!important;
+        gap:6px!important;
+      }
+      .email-txt-template-actions button,
+      .email-txt-actions button{
+        width:100%!important;
+        max-width:100%!important;
+        min-width:0!important;
+      }
+      .email-txt-box{
+        min-height:160px!important;
+        padding:10px!important;
+        font-size:13px!important;
+      }
+
+      .room-info-buttons{
+        gap:6px!important;
+      }
+      .room-info-button{
+        width:100%!important;
+        min-height:54px!important;
+        height:auto!important;
+        padding:6px 8px!important;
+        border-radius:10px!important;
+        font-size:11px!important;
+        line-height:1.15!important;
+      }
+      .room-info-button span,
+      .room-info-button small{
+        font-size:10px!important;
+        line-height:1.1!important;
+      }
+      .room-info-line{
+        display:grid!important;
+        grid-template-columns:auto minmax(0,1fr) auto auto!important;
+        align-items:center!important;
+        gap:4px!important;
+      }
+      .room-info-name{
+        min-width:0!important;
+        overflow:hidden!important;
+        text-overflow:ellipsis!important;
+        white-space:nowrap!important;
+      }
+      .room-info-extra-slot{
+        grid-column:1/-1!important;
+        display:flex!important;
+        flex-wrap:wrap!important;
+        gap:3px!important;
+        margin-top:2px!important;
+      }
+      .room-kind-badge,
+      .room-square-meters-badge,
+      .room-price-capacity-badge,
+      .room-max-badge,
+      .room-service-badge{
+        padding:2px 4px!important;
+        border-radius:6px!important;
+        font-size:9px!important;
+        line-height:1!important;
+      }
+
+      #discountsEditor .button-row,
+      .discounts-panel .button-row{
+        display:grid!important;
+        grid-template-columns:repeat(2,minmax(0,1fr))!important;
+        gap:6px!important;
+        width:100%!important;
+      }
+      #discountsEditor .button-row button,
+      .discounts-panel .button-row button{
+        width:100%!important;
+        max-width:100%!important;
+        min-width:0!important;
+        min-height:30px!important;
+        padding:5px 7px!important;
+        font-size:12px!important;
+        border-radius:9px!important;
+      }
+      #discountsEditor .section-toggle,
+      .discounts-panel .section-toggle{
+        min-height:36px!important;
+        padding:7px 9px!important;
+        font-size:12px!important;
+      }
+
+      .discount-reservations-toolbar-actions{
+        display:grid!important;
+        grid-template-columns:44px 54px 34px minmax(110px,1fr)!important;
+        gap:5px!important;
+        width:100%!important;
+        justify-content:stretch!important;
+      }
+      .discount-reservations-toolbar-actions #exportDiscountReservationsPdfBtn,
+      .discount-reservations-toolbar-actions #exportDiscountReservationsExcelBtn,
+      .discount-reservation-layout-btn,
+      .discount-reservations-toolbar-actions .success{
+        width:100%!important;
+        min-width:0!important;
+        max-width:100%!important;
+        padding:0 6px!important;
+        font-size:11px!important;
+      }
+      .discount-reservation-actions{
+        gap:5px!important;
+      }
+
+      .checklist-hotels,
+      .cancellation-hotel-tabs{
+        display:grid!important;
+        grid-template-columns:repeat(2,minmax(0,1fr))!important;
+        gap:6px!important;
+      }
+      .checklist-hotel-btn,
+      .cancellation-hotel-btn{
+        width:100%!important;
+        min-width:0!important;
+        max-width:100%!important;
+        min-height:30px!important;
+        padding:5px 7px!important;
+        font-size:12px!important;
+        border-radius:9px!important;
+      }
+    }
     .sidebar-edge-toggle:hover{background:#1d4ed8}
     body.sidebar-collapsed .sidebar-edge-toggle{left:0}
     @media(max-width:950px){.sidebar-edge-toggle{display:none!important}}
@@ -4594,5 +4820,232 @@
         min-height:28px!important;
         padding:0 8px!important;
         font-size:11px!important;
+      }
+    }
+
+    /* v208: final mobile polish after compact layer */
+    @media (max-width: 700px){
+      .tasks-calendar-card{
+        padding:12px!important;
+      }
+      .tasks-calendar-heading{
+        margin-bottom:8px!important;
+        font-size:15px!important;
+      }
+      .task-calendar-head{
+        margin-bottom:8px!important;
+      }
+      .task-calendar-title{
+        font-size:15px!important;
+      }
+      .task-calendar-nav{
+        width:32px!important;
+        height:32px!important;
+        min-height:32px!important;
+        border-radius:10px!important;
+      }
+      .task-calendar-grid{
+        gap:4px!important;
+      }
+      .task-calendar-day-name{
+        font-size:11px!important;
+        padding:3px 0!important;
+      }
+      .task-calendar-day{
+        min-height:44px!important;
+        border-radius:11px!important;
+        padding:4px 2px!important;
+        gap:2px!important;
+        font-size:12px!important;
+      }
+      .task-calendar-count,
+      .task-calendar-bell{
+        min-height:11px!important;
+        font-size:9px!important;
+      }
+      .tasks-calendar-note{
+        display:block!important;
+        margin-top:8px!important;
+        font-size:12px!important;
+        line-height:1.35!important;
+      }
+
+      .contracts-layout,
+      .email-txt-layout{
+        gap:6px!important;
+      }
+      .contracts-sidebar,
+      .contracts-panel,
+      .email-txt-sidebar,
+      .email-txt-panel{
+        margin:6px!important;
+        padding:8px!important;
+        border-radius:11px!important;
+        min-width:0!important;
+        max-width:100%!important;
+        overflow:hidden!important;
+      }
+      .contracts-button-list,
+      .email-txt-template-tabs{
+        display:grid!important;
+        grid-template-columns:1fr!important;
+        gap:5px!important;
+        min-width:0!important;
+        width:100%!important;
+      }
+      .contract-button,
+      .email-txt-template-tab{
+        width:100%!important;
+        max-width:100%!important;
+        min-width:0!important;
+        min-height:30px!important;
+        padding:6px 8px!important;
+        border-radius:9px!important;
+        font-size:12px!important;
+        line-height:1.2!important;
+        overflow:hidden!important;
+      }
+      .contract-button{
+        display:grid!important;
+        grid-template-columns:minmax(0,1fr) auto!important;
+        gap:6px!important;
+      }
+      .contract-button-name,
+      .contract-button-meta{
+        min-width:0!important;
+        overflow:hidden!important;
+        text-overflow:ellipsis!important;
+        white-space:nowrap!important;
+      }
+      .email-txt-template-tab{
+        white-space:normal!important;
+        text-align:left!important;
+      }
+      .email-txt-template-actions,
+      .email-txt-actions{
+        display:grid!important;
+        grid-template-columns:1fr 1fr!important;
+        gap:6px!important;
+      }
+      .email-txt-template-actions button,
+      .email-txt-actions button{
+        width:100%!important;
+        max-width:100%!important;
+        min-width:0!important;
+      }
+      .email-txt-box{
+        min-height:160px!important;
+        padding:10px!important;
+        font-size:13px!important;
+      }
+
+      .room-info-buttons{
+        gap:6px!important;
+      }
+      .room-info-button{
+        width:100%!important;
+        min-height:54px!important;
+        height:auto!important;
+        padding:6px 8px!important;
+        border-radius:10px!important;
+        font-size:11px!important;
+        line-height:1.15!important;
+      }
+      .room-info-button span,
+      .room-info-button small{
+        font-size:10px!important;
+        line-height:1.1!important;
+      }
+
+      .room-info-line{
+        display:grid!important;
+        grid-template-columns:auto minmax(0,1fr) auto auto!important;
+        align-items:center!important;
+        gap:4px!important;
+      }
+      .room-info-name{
+        min-width:0!important;
+        overflow:hidden!important;
+        text-overflow:ellipsis!important;
+        white-space:nowrap!important;
+      }
+      .room-info-extra-slot{
+        grid-column:1/-1!important;
+        display:flex!important;
+        flex-wrap:wrap!important;
+        gap:3px!important;
+        margin-top:2px!important;
+      }
+      .room-kind-badge,
+      .room-square-meters-badge,
+      .room-price-capacity-badge,
+      .room-max-badge,
+      .room-service-badge{
+        padding:2px 4px!important;
+        border-radius:6px!important;
+        font-size:9px!important;
+        line-height:1!important;
+      }
+
+      #discountsEditor .button-row,
+      .discounts-panel .button-row{
+        display:grid!important;
+        grid-template-columns:repeat(2,minmax(0,1fr))!important;
+        gap:6px!important;
+        width:100%!important;
+      }
+      #discountsEditor .button-row button,
+      .discounts-panel .button-row button{
+        width:100%!important;
+        max-width:100%!important;
+        min-width:0!important;
+        min-height:30px!important;
+        padding:5px 7px!important;
+        font-size:12px!important;
+        border-radius:9px!important;
+      }
+      #discountsEditor .section-toggle,
+      .discounts-panel .section-toggle{
+        min-height:36px!important;
+        padding:7px 9px!important;
+        font-size:12px!important;
+      }
+
+      .discount-reservations-toolbar-actions{
+        display:grid!important;
+        grid-template-columns:44px 54px 34px minmax(110px,1fr)!important;
+        gap:5px!important;
+        width:100%!important;
+        justify-content:stretch!important;
+      }
+      .discount-reservations-toolbar-actions #exportDiscountReservationsPdfBtn,
+      .discount-reservations-toolbar-actions #exportDiscountReservationsExcelBtn,
+      .discount-reservation-layout-btn,
+      .discount-reservations-toolbar-actions .success{
+        width:100%!important;
+        min-width:0!important;
+        max-width:100%!important;
+        padding:0 6px!important;
+        font-size:11px!important;
+      }
+      .discount-reservation-actions{
+        gap:5px!important;
+      }
+
+      .checklist-hotels,
+      .cancellation-hotel-tabs{
+        display:grid!important;
+        grid-template-columns:repeat(2,minmax(0,1fr))!important;
+        gap:6px!important;
+      }
+      .checklist-hotel-btn,
+      .cancellation-hotel-btn{
+        width:100%!important;
+        min-width:0!important;
+        max-width:100%!important;
+        min-height:30px!important;
+        padding:5px 7px!important;
+        font-size:12px!important;
+        border-radius:9px!important;
       }
     }
