@@ -287,6 +287,7 @@
         border-radius:9px!important;
       }
     }
+
     .sidebar-edge-toggle:hover{background:#1d4ed8}
     body.sidebar-collapsed .sidebar-edge-toggle{left:0}
     @media(max-width:950px){.sidebar-edge-toggle{display:none!important}}
@@ -5047,5 +5048,67 @@
         padding:5px 7px!important;
         font-size:12px!important;
         border-radius:9px!important;
+      }
+    }
+
+    /* v211: actual EOF mobile fix for task calendar and discount channel tabs */
+    @media (max-width: 700px){
+      .tasks-calendar-card{padding:14px!important}
+      .tasks-calendar-heading{font-size:16px!important;margin-bottom:10px!important}
+      .task-calendar-title{font-size:16px!important}
+      .task-calendar-nav{width:34px!important;height:34px!important;min-height:34px!important}
+      .task-calendar-grid{gap:5px!important}
+      .task-calendar-day-name{font-size:12px!important;padding:4px 0!important}
+      .task-calendar-day{
+        min-height:62px!important;
+        border-radius:12px!important;
+        padding:5px 2px!important;
+        font-size:13px!important;
+        gap:3px!important;
+      }
+      .task-calendar-count,
+      .task-calendar-bell{min-height:12px!important;font-size:10px!important}
+
+      #discountsEditor #subsectionTabs{
+        display:grid!important;
+        grid-template-columns:repeat(3,minmax(0,1fr))!important;
+        gap:4px!important;
+        margin-top:6px!important;
+        padding:0!important;
+      }
+      #discountsEditor #subsectionTabs .subsection-tab{
+        width:100%!important;
+        min-width:0!important;
+        min-height:24px!important;
+        padding:3px 5px!important;
+        border-radius:7px!important;
+        font-size:10.5px!important;
+        line-height:1!important;
+        white-space:nowrap!important;
+        overflow:hidden!important;
+        text-overflow:ellipsis!important;
+      }
+      #discountsEditor #subsectionTabs .drag-mark{margin-right:2px!important;font-size:10px!important}
+      #discountsEditor .subsection-manager{
+        display:grid!important;
+        grid-template-columns:1fr 1fr!important;
+        gap:5px!important;
+        margin-top:7px!important;
+      }
+      #discountsEditor .subsection-manager > div{grid-column:1 / -1!important}
+      #discountsEditor .subsection-manager button{
+        min-height:28px!important;
+        padding:4px 6px!important;
+        border-radius:8px!important;
+        font-size:11px!important;
+        width:100%!important;
+        min-width:0!important;
+      }
+      #discountsEditor #hotelTabs{gap:5px!important;margin-top:7px!important}
+      #discountsEditor #hotelTabs .hotel-tab{
+        min-height:28px!important;
+        padding:4px 6px!important;
+        font-size:11px!important;
+        border-radius:8px!important;
       }
     }
