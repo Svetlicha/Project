@@ -3636,13 +3636,56 @@ function deleteDiscountReservation(id){
 }
 function autoResizeDiscountReservationComment(field){
   if(!field)return;
-  const minHeight=74;
+  const computedMin=parseFloat(getComputedStyle(field).minHeight)||74;
+  const minHeight=Math.max(74,computedMin);
   field.style.setProperty('overflow-y','hidden','important');
   field.style.setProperty('resize','none','important');
   field.style.setProperty('max-height','none','important');
   field.style.setProperty('height','auto','important');
   const nextHeight=Math.max(minHeight,field.scrollHeight+4);
   field.style.setProperty('height',nextHeight+'px','important');
+}
+function discountReservationAutoSizeText(field){
+  if(!field)return '';
+  if(field.tagName==='SELECT'){
+    const selected=field.selectedOptions&&field.selectedOptions[0];
+    return (selected&&selected.textContent)||field.value||'';
+  }
+  return field.value||field.placeholder||'';
+}
+function autoSizeDiscountReservationField(field){
+  if(!field||field.tagName==='TEXTAREA'){
+    if(field&&field.tagName==='TEXTAREA')autoResizeDiscountReservationComment(field);
+    return;
+  }
+  const text=discountReservationAutoSizeText(field).trim();
+  const baseLength=text.length||String(field.placeholder||'').length||4;
+  let minCh=6;
+  let maxCh=34;
+  if(field.classList.contains('discount-reservation-created-date')){minCh=6;maxCh=8}
+  if(field.classList.contains('discount-reservation-clock')){minCh=8;maxCh=12}
+  if(field.classList.contains('discount-reservation-room')){minCh=7;maxCh=16}
+  if(field.classList.contains('discount-reservation-price')){minCh=8;maxCh=14}
+  if(field.classList.contains('discount-reservation-discount')){minCh=5;maxCh=10}
+  if(field.classList.contains('discount-reservation-guest')){minCh=14;maxCh=42}
+  if(field.classList.contains('discount-reservation-hotel')){minCh=14;maxCh=34}
+  if(field.classList.contains('discount-reservation-contact-email')){minCh=16;maxCh=42}
+  if(field.classList.contains('discount-reservation-contact-phone')){minCh=12;maxCh=24}
+  if(field.classList.contains('discount-reservation-date')){minCh=7;maxCh=9}
+  if(field.classList.contains('discount-reservation-nights-trigger')){minCh=7;maxCh=10}
+  const widthCh=Math.max(minCh,Math.min(maxCh,baseLength+2));
+  const widthValue=`min(${widthCh}ch, 100%)`;
+  field.style.setProperty('width',widthValue,'important');
+  field.style.setProperty('max-width','100%','important');
+  const percentWrap=field.closest('.discount-reservation-percent-wrap');
+  if(percentWrap){
+    percentWrap.style.setProperty('width',widthValue,'important');
+    percentWrap.style.setProperty('max-width','100%','important');
+  }
+}
+function autoSizeDiscountReservationFields(root){
+  if(!root)return;
+  root.querySelectorAll('.discount-reservation-fields input, .discount-reservation-fields select, .discount-reservation-fields textarea').forEach(field=>autoSizeDiscountReservationField(field));
 }
 function renderDiscountReservations(){
   const listEl=document.getElementById('discountReservationsList');
@@ -3694,20 +3737,31 @@ function renderDiscountReservations(){
       autoResizeDiscountReservationComment(field);
       requestAnimationFrame(()=>autoResizeDiscountReservationComment(field));
     });
+    autoSizeDiscountReservationFields(card);
+    requestAnimationFrame(()=>autoSizeDiscountReservationFields(card));
     if(editable){
       card.querySelectorAll('[data-discount-reservation-field]').forEach(field=>{
         const name=field.dataset.discountReservationField;
         field.addEventListener('input',()=>{
           updateDiscountReservation(id,name,field.value,{deferred:true});
-          if(field.tagName==='TEXTAREA')autoResizeDiscountReservationComment(field);
+          autoSizeDiscountReservationField(field);
         });
-        field.addEventListener('change',()=>updateDiscountReservation(id,name,field.value));
+        field.addEventListener('change',()=>{
+          updateDiscountReservation(id,name,field.value);
+          autoSizeDiscountReservationField(field);
+        });
         field.addEventListener('blur',()=>flushScheduledSilentStateSave());
       });
       card.querySelectorAll('[data-discount-reservation-clock-index]').forEach(field=>{
         const index=Number(field.dataset.discountReservationClockIndex)||0;
-        field.addEventListener('input',()=>updateDiscountReservationClock(id,index,field.value,{deferred:true}));
-        field.addEventListener('change',()=>updateDiscountReservationClock(id,index,field.value));
+        field.addEventListener('input',()=>{
+          updateDiscountReservationClock(id,index,field.value,{deferred:true});
+          autoSizeDiscountReservationField(field);
+        });
+        field.addEventListener('change',()=>{
+          updateDiscountReservationClock(id,index,field.value);
+          autoSizeDiscountReservationField(field);
+        });
         field.addEventListener('blur',()=>flushScheduledSilentStateSave());
       });
       card.querySelectorAll('[data-discount-reservation-clock-add]').forEach(btn=>{
@@ -3718,8 +3772,14 @@ function renderDiscountReservations(){
       });
       card.querySelectorAll('[data-discount-reservation-custom-field]').forEach(field=>{
         const name=field.dataset.discountReservationCustomField;
-        field.addEventListener('input',()=>updateDiscountReservationCustomField(id,name,field.value,{deferred:true}));
-        field.addEventListener('change',()=>updateDiscountReservationCustomField(id,name,field.value));
+        field.addEventListener('input',()=>{
+          updateDiscountReservationCustomField(id,name,field.value,{deferred:true});
+          autoSizeDiscountReservationField(field);
+        });
+        field.addEventListener('change',()=>{
+          updateDiscountReservationCustomField(id,name,field.value);
+          autoSizeDiscountReservationField(field);
+        });
         field.addEventListener('blur',()=>flushScheduledSilentStateSave());
       });
       const rangeTrigger=card.querySelector('[data-discount-reservation-range]');

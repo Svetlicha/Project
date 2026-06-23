@@ -5112,3 +5112,181 @@
         border-radius:8px!important;
       }
     }
+
+    /* v212: mobile discount reservation card rows */
+    @media (max-width: 700px){
+      .discount-reservation-card{
+        padding:10px!important;
+        border-radius:14px!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom{
+        display:grid!important;
+        grid-template-columns:repeat(12,minmax(0,1fr))!important;
+        grid-auto-rows:auto!important;
+        gap:7px!important;
+        align-items:center!important;
+        overflow:visible!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom > [data-res-layout-field]{
+        width:auto!important;
+        min-width:0!important;
+        max-width:100%!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom input,
+      .discount-reservation-fields.reservation-layout-custom select,
+      .discount-reservation-fields.reservation-layout-custom textarea{
+        min-height:32px!important;
+        height:auto!important;
+        padding:6px 8px!important;
+        font-size:12px!important;
+        border-radius:10px!important;
+        line-height:1.2!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-number{
+        grid-column:2 / 4!important;
+        grid-row:1!important;
+        justify-self:end!important;
+        width:40px!important;
+        height:32px!important;
+        min-height:32px!important;
+        font-size:15px!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-created-date{
+        grid-column:4 / 7!important;
+        grid-row:1!important;
+        justify-self:center!important;
+        text-align:center!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-hotel{
+        grid-column:7 / 12!important;
+        grid-row:1!important;
+        justify-self:start!important;
+        text-align:left!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-guest{
+        grid-column:1 / 8!important;
+        grid-row:2!important;
+        justify-self:start!important;
+        text-align:left!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-stay{
+        grid-column:8 / -1!important;
+        grid-row:2!important;
+        justify-self:end!important;
+        display:grid!important;
+        grid-template-columns:auto auto auto!important;
+        gap:4px!important;
+        align-items:center!important;
+        width:auto!important;
+        min-width:0!important;
+        max-width:100%!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-date,
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-nights-trigger{
+        width:auto!important;
+        min-width:0!important;
+        max-width:100%!important;
+        text-align:center!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-room{
+        grid-column:1 / 5!important;
+        grid-row:3!important;
+        justify-self:start!important;
+        text-align:left!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-price{
+        grid-column:5 / 9!important;
+        grid-row:3!important;
+        justify-self:center!important;
+        text-align:right!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-percent-wrap{
+        grid-column:9 / -1!important;
+        grid-row:3!important;
+        justify-self:end!important;
+        display:block!important;
+        height:32px!important;
+        min-height:32px!important;
+        min-width:58px!important;
+        width:auto!important;
+        max-width:100%!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-percent-wrap .discount-reservation-discount{
+        height:30px!important;
+        min-height:30px!important;
+        padding:0 5px!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-contact-stack{
+        grid-column:1 / -1!important;
+        grid-row:4!important;
+        display:grid!important;
+        grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+        gap:6px!important;
+        width:100%!important;
+        max-width:100%!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-contact-phone{
+        order:1!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-contact-email{
+        order:2!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-contact-stack .discount-reservation-custom{
+        width:auto!important;
+        min-width:0!important;
+        max-width:100%!important;
+        text-align:left!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-clock-list{
+        grid-column:1 / -1!important;
+        grid-row:5!important;
+        display:flex!important;
+        flex-wrap:wrap!important;
+        align-items:center!important;
+        gap:5px!important;
+        overflow:visible!important;
+        white-space:normal!important;
+        width:100%!important;
+        max-width:100%!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-clock-list .discount-reservation-clock{
+        flex:0 1 auto!important;
+        width:min(10ch,100%)!important;
+        min-width:8ch!important;
+        max-width:12ch!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-clock-row{
+        display:grid!important;
+        grid-template-columns:28px minmax(8ch,12ch) 28px!important;
+        gap:4px!important;
+        align-items:center!important;
+        flex:0 1 auto!important;
+        width:auto!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-clock-add,
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-clock-remove{
+        width:28px!important;
+        min-width:28px!important;
+        height:32px!important;
+        min-height:32px!important;
+        padding:0!important;
+        flex:0 0 28px!important;
+      }
+      .discount-reservation-fields.reservation-layout-custom .discount-reservation-comment{
+        grid-column:1 / -1!important;
+        grid-row:6!important;
+        justify-self:stretch!important;
+        width:100%!important;
+        min-width:0!important;
+        max-width:100%!important;
+        min-height:132px!important;
+        height:auto!important;
+        resize:vertical!important;
+        overflow:hidden!important;
+        line-height:1.35!important;
+        padding:9px!important;
+      }
+      .discount-reservation-footer{
+        margin-top:8px!important;
+      }
+    }
