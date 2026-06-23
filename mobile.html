@@ -116,6 +116,7 @@
       <button class="small" type="button" data-quick-section="ultra">Ултра Ол Инклузив</button>
       <button class="small" type="button" data-quick-section="discounts">Отстъпки по хотели</button>
       <button class="small" type="button" data-quick-section="discountReservations">Резервации с отстъпки</button>
+      <button class="small" type="button" data-quick-section="form">Форма</button>
       <button class="small" type="button" data-quick-section="email">Таблица с имейли</button>
       <button class="small" type="button" data-quick-section="contracts">Договори</button>
       <button class="small" type="button" data-quick-section="tasks">Задачи</button>
@@ -581,6 +582,49 @@
           <button id="unpinEmailFloatingBtn" class="unpin-email-floating hidden no-print" type="button">✕ Откачи</button>
         </div>
       </div>
+      </div>
+    </section>
+
+    <section class="section" id="workFormSection">
+      <div class="section-title">
+        <div>
+          <button class="section-toggle" id="toggleWorkFormBtn" type="button">▶ Форма</button>
+          <p>Месечна форма за работни дни, хотели, часове, почивки и отпуски.</p>
+        </div>
+        <div class="section-save-actions no-print"><button class="primary small section-json-save-btn" data-section-save="workForm" type="button">Запази</button></div>
+      </div>
+      <div id="workFormEditor" class="hidden">
+        <div class="work-form-panel">
+          <div class="work-form-head">
+            <div>
+              <h4>Форма за месеца</h4>
+              <div class="muted" id="workFormSummary">Избери месец и попълни работните дни.</div>
+            </div>
+            <button class="small" id="workFormSettingsToggle" type="button">Настройки</button>
+          </div>
+          <div class="work-form-months" id="workFormMonths"></div>
+          <div class="work-form-settings hidden" id="workFormSettings">
+            <div class="work-form-settings-block">
+              <h5>Имена и назначаване</h5>
+              <div class="work-form-employees" id="workFormEmployees"></div>
+            </div>
+            <div class="work-form-settings-block">
+              <h5>Цветове</h5>
+              <div class="work-form-colors">
+                <label>Работни дни <input id="workFormWorkColor" type="color" /></label>
+                <label>Почивни дни <input id="workFormRestColor" type="color" /></label>
+              </div>
+            </div>
+            <div class="work-form-settings-block">
+              <h5>Хотел по период</h5>
+              <div class="work-form-rules" id="workFormRules"></div>
+              <button class="small" id="workFormAddRuleBtn" type="button">+ Период</button>
+            </div>
+          </div>
+          <div class="work-form-table-wrap">
+            <table class="work-form-table" id="workFormTable"></table>
+          </div>
+        </div>
       </div>
     </section>
 
