@@ -1,13 +1,13 @@
 ﻿/* ---- mobile script block 1 from v202 ---- */
 (function setupRobustMobileBottomNavV165(){
   const sectionTargetIds={
-    hotels:'hotelsSection',contracts:'contractsSection',tasks:'tasksSection',roomTypes:'roomTypesSection',prices:'pricesSection',ultra:'ultraSection',discounts:'discountsSection',discountReservations:'discountReservationsSection',email:'emailSection',emailTxt:'emailTxtSection',checklist:'checklistSection',cancellations:'cancellationsSection'
+    hotels:'hotelsSection',contracts:'contractsSection',tasks:'tasksSection',roomTypes:'roomTypesSection',prices:'pricesSection',ultra:'ultraSection',discounts:'discountsSection',discountReservations:'discountReservationsSection',form:'workFormSection',email:'emailSection',emailTxt:'emailTxtSection',checklist:'checklistSection',cancellations:'cancellationsSection'
   };
   const editorIds={
-    hotels:'hotelsEditor',contracts:'contractsEditor',tasks:'tasksEditor',roomTypes:'roomTypesSectionEditor',prices:'pricesEditor',ultra:'ultraEditor',discounts:'discountsEditor',email:'emailTableEditor',emailTxt:'emailTxtEditor',checklist:'checklistEditor',cancellations:'cancellationsEditor'
+    hotels:'hotelsEditor',contracts:'contractsEditor',tasks:'tasksEditor',roomTypes:'roomTypesSectionEditor',prices:'pricesEditor',ultra:'ultraEditor',discounts:'discountsEditor',discountReservations:'discountReservationsEditor',form:'workFormEditor',email:'emailTableEditor',emailTxt:'emailTxtEditor',checklist:'checklistEditor',cancellations:'cancellationsEditor'
   };
   const toggleIds={
-    hotels:'toggleHotelsBtn',contracts:'toggleContractsBtn',tasks:'toggleTasksBtn',roomTypes:'toggleRoomTypesSectionBtn',prices:'togglePricesBtn',ultra:'toggleUltraBtn',discounts:'toggleDiscountsBtn',email:'toggleEmailTableBtn',emailTxt:'toggleEmailTxtBtn',checklist:'toggleChecklistBtn',cancellations:'toggleCancellationsBtn'
+    hotels:'toggleHotelsBtn',contracts:'toggleContractsBtn',tasks:'toggleTasksBtn',roomTypes:'toggleRoomTypesSectionBtn',prices:'togglePricesBtn',ultra:'toggleUltraBtn',discounts:'toggleDiscountsBtn',discountReservations:'toggleDiscountReservationsBtn',form:'toggleWorkFormBtn',email:'toggleEmailTableBtn',emailTxt:'toggleEmailTxtBtn',checklist:'toggleChecklistBtn',cancellations:'toggleCancellationsBtn'
   };
   function isMobile(){return !window.matchMedia||window.matchMedia('(max-width:950px)').matches;}
   function setActive(target){
@@ -89,6 +89,237 @@
   document.addEventListener('click',handle,true);
   document.addEventListener('touchend',handle,true);
 })();
+
+const WORK_FORM_STORAGE_KEY='hotel_discount_history_work_form_v1';
+const WORK_FORM_MONTH_NAMES=['Януари','Февруари','Март','Април','Май','Юни','Юли','Август','Септември','Октомври','Ноември','Декември'];
+const WORK_FORM_WEEKDAYS=['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
+let workFormState=null;
+
+function workFormEscape(value){
+  return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function defaultWorkFormState(){
+  const now=new Date();
+  return {
+    year:now.getFullYear(),
+    month:now.getMonth(),
+    colors:{work:'#eef7ff',rest:'#fff1d6'},
+    employees:Array.from({length:5},(_,index)=>({name:`Служител ${index+1}`,hireDate:''})),
+    rules:[],
+    entries:{}
+  };
+}
+function loadWorkFormState(){
+  if(workFormState)return workFormState;
+  try{
+    const parsed=JSON.parse(localStorage.getItem(WORK_FORM_STORAGE_KEY)||'null');
+    workFormState=parsed&&typeof parsed==='object'?parsed:defaultWorkFormState();
+  }catch(e){
+    workFormState=defaultWorkFormState();
+  }
+  workFormState.colors={work:'#eef7ff',rest:'#fff1d6',...(workFormState.colors||{})};
+  workFormState.employees=Array.from({length:5},(_,index)=>({
+    name:workFormState.employees&&workFormState.employees[index]?workFormState.employees[index].name||`Служител ${index+1}`:`Служител ${index+1}`,
+    hireDate:workFormState.employees&&workFormState.employees[index]?workFormState.employees[index].hireDate||'':''
+  }));
+  workFormState.rules=Array.isArray(workFormState.rules)?workFormState.rules:[];
+  workFormState.entries=workFormState.entries&&typeof workFormState.entries==='object'?workFormState.entries:{};
+  return workFormState;
+}
+function saveWorkFormState(){
+  try{localStorage.setItem(WORK_FORM_STORAGE_KEY,JSON.stringify(loadWorkFormState()))}catch(e){}
+}
+function workFormMonthKey(year,month){
+  return `${year}-${String(month+1).padStart(2,'0')}`;
+}
+function workFormISO(year,month,day){
+  return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+}
+function workFormEntryKey(year,month,employeeIndex,day){
+  return `${workFormMonthKey(year,month)}|${employeeIndex}|${String(day).padStart(2,'0')}`;
+}
+function workFormDaysInMonth(year,month){
+  return new Date(year,month+1,0).getDate();
+}
+function workFormIsWeekend(year,month,day){
+  const weekday=new Date(year,month,day).getDay();
+  return weekday===0||weekday===6;
+}
+function workFormHotelForDate(employeeIndex,iso,entry){
+  if(entry&&entry.hotel)return entry.hotel;
+  const state=loadWorkFormState();
+  let hotel='';
+  state.rules.forEach(rule=>{
+    const appliesEmployee=rule.employeeIndex===''||rule.employeeIndex===undefined||Number(rule.employeeIndex)===employeeIndex;
+    if(appliesEmployee&&rule.from&&rule.to&&iso>=rule.from&&iso<=rule.to)hotel=rule.hotel||hotel;
+  });
+  return hotel;
+}
+function workFormUsedLeaveForEmployee(employeeIndex){
+  const state=loadWorkFormState();
+  return Object.entries(state.entries).reduce((total,[key,entry])=>{
+    const parts=key.split('|');
+    return Number(parts[1])===employeeIndex&&entry&&entry.value==='О'?total+1:total;
+  },0);
+}
+function workFormEarnedLeave(employee,year,month){
+  if(!employee.hireDate)return 0;
+  const hired=new Date(employee.hireDate+'T00:00:00');
+  const until=new Date(year,month+1,0);
+  if(Number.isNaN(hired.getTime())||hired>until)return 0;
+  const months=(until.getFullYear()-hired.getFullYear())*12+(until.getMonth()-hired.getMonth())+1;
+  return Math.max(0,months*1.6);
+}
+function renderWorkFormMonths(){
+  const state=loadWorkFormState();
+  const host=document.getElementById('workFormMonths');
+  if(!host)return;
+  host.innerHTML=WORK_FORM_MONTH_NAMES.map((name,index)=>
+    `<button class="small ${index===state.month?'active':''}" type="button" data-work-form-month="${index}">${name}</button>`
+  ).join('');
+}
+function renderWorkFormSettings(){
+  const state=loadWorkFormState();
+  const employeesHost=document.getElementById('workFormEmployees');
+  const rulesHost=document.getElementById('workFormRules');
+  const workColor=document.getElementById('workFormWorkColor');
+  const restColor=document.getElementById('workFormRestColor');
+  if(workColor)workColor.value=state.colors.work;
+  if(restColor)restColor.value=state.colors.rest;
+  if(employeesHost){
+    employeesHost.innerHTML=state.employees.map((employee,index)=>`
+      <div class="work-form-employee-row">
+        <span>${index+1}</span>
+        <input data-work-form-employee-name="${index}" type="text" value="${workFormEscape(employee.name)}" placeholder="Име" />
+        <input data-work-form-employee-hire="${index}" type="date" value="${workFormEscape(employee.hireDate)}" />
+      </div>
+    `).join('');
+  }
+  if(rulesHost){
+    const employeeOptions=['<option value="">Всички</option>',...state.employees.map((employee,index)=>`<option value="${index}">${workFormEscape(employee.name||`Служител ${index+1}`)}</option>`)].join('');
+    rulesHost.innerHTML=state.rules.map((rule,index)=>`
+      <div class="work-form-rule-row">
+        <select data-work-form-rule-employee="${index}">${employeeOptions}</select>
+        <input data-work-form-rule-from="${index}" type="date" value="${workFormEscape(rule.from||'')}" />
+        <input data-work-form-rule-to="${index}" type="date" value="${workFormEscape(rule.to||'')}" />
+        <input data-work-form-rule-hotel="${index}" type="text" value="${workFormEscape(rule.hotel||'')}" placeholder="Хотел" />
+        <button class="danger small" type="button" data-work-form-rule-remove="${index}">×</button>
+      </div>
+    `).join('')||'<div class="muted">Няма добавени периоди за хотел.</div>';
+    state.rules.forEach((rule,index)=>{
+      const select=rulesHost.querySelector(`[data-work-form-rule-employee="${index}"]`);
+      if(select)select.value=rule.employeeIndex??'';
+    });
+  }
+}
+function renderWorkFormTable(){
+  const state=loadWorkFormState();
+  const table=document.getElementById('workFormTable');
+  const summary=document.getElementById('workFormSummary');
+  if(!table)return;
+  const {year,month}=state;
+  const days=workFormDaysInMonth(year,month);
+  if(summary)summary.textContent=`${WORK_FORM_MONTH_NAMES[month]} ${year} · ${days} дни · 1.6 дни отпуск на месец`;
+  const dayHeaders=Array.from({length:days},(_,i)=>{
+    const day=i+1, weekend=workFormIsWeekend(year,month,day);
+    return `<th class="${weekend?'rest-day':'work-day'}" style="background:${weekend?state.colors.rest:state.colors.work}">${day}</th>`;
+  }).join('');
+  const weekdayHeaders=Array.from({length:days},(_,i)=>{
+    const day=i+1, weekend=workFormIsWeekend(year,month,day);
+    return `<th class="${weekend?'rest-day':'work-day'}" style="background:${weekend?state.colors.rest:state.colors.work}">${WORK_FORM_WEEKDAYS[new Date(year,month,day).getDay()]}</th>`;
+  }).join('');
+  const rows=state.employees.map((employee,employeeIndex)=>{
+    let hours=0, leaveDays=0;
+    const cells=Array.from({length:days},(_,i)=>{
+      const day=i+1, iso=workFormISO(year,month,day), key=workFormEntryKey(year,month,employeeIndex,day);
+      const entry=state.entries[key]||{};
+      const weekend=workFormIsWeekend(year,month,day);
+      const value=entry.value||'';
+      const hotel=workFormHotelForDate(employeeIndex,iso,entry);
+      if(value==='О')leaveDays+=1;
+      else if(value&&value!=='П')hours+=Number(value)||0;
+      return `<td class="${weekend?'rest-day':'work-day'}" style="background:${weekend?state.colors.rest:state.colors.work}">
+        <select data-work-form-cell-value="${key}">
+          <option value=""></option>
+          <option value="8">8</option>
+          <option value="4">4</option>
+          <option value="12">12</option>
+          <option value="О">О</option>
+          <option value="П">П</option>
+        </select>
+        <input data-work-form-cell-hotel="${key}" type="text" value="${workFormEscape(hotel)}" placeholder="Хотел" />
+      </td>`;
+    }).join('');
+    const earned=workFormEarnedLeave(employee,year,month);
+    const usedAll=workFormUsedLeaveForEmployee(employeeIndex);
+    const remaining=earned-usedAll;
+    return `<tr>
+      <th class="work-form-name">${workFormEscape(employee.name||`Служител ${employeeIndex+1}`)}</th>
+      ${cells}
+      <td class="work-form-total">${hours}</td>
+      <td class="work-form-total">${leaveDays}</td>
+      <td class="work-form-total">${earned.toFixed(1)}</td>
+      <td class="work-form-total">${remaining.toFixed(1)}</td>
+    </tr>`;
+  }).join('');
+  table.innerHTML=`<thead>
+    <tr><th class="work-form-name">Име</th>${dayHeaders}<th>Часове</th><th>О</th><th>Натруп.</th><th>Остава</th></tr>
+    <tr><th class="work-form-name"></th>${weekdayHeaders}<th></th><th></th><th></th><th></th></tr>
+  </thead><tbody>${rows}</tbody>`;
+  table.querySelectorAll('[data-work-form-cell-value]').forEach(select=>{
+    const entry=state.entries[select.dataset.workFormCellValue]||{};
+    select.value=entry.value||'';
+  });
+}
+function bindWorkFormEvents(){
+  const state=loadWorkFormState();
+  document.querySelectorAll('[data-work-form-month]').forEach(btn=>{
+    btn.onclick=()=>{state.month=Number(btn.dataset.workFormMonth)||0;saveWorkFormState();renderWorkForm();};
+  });
+  const settingsToggle=document.getElementById('workFormSettingsToggle');
+  if(settingsToggle)settingsToggle.onclick=()=>document.getElementById('workFormSettings')?.classList.toggle('hidden');
+  document.querySelectorAll('[data-work-form-employee-name]').forEach(input=>{
+    input.oninput=()=>{state.employees[Number(input.dataset.workFormEmployeeName)].name=input.value;saveWorkFormState();};
+    input.onblur=()=>renderWorkForm();
+  });
+  document.querySelectorAll('[data-work-form-employee-hire]').forEach(input=>{
+    input.onchange=()=>{state.employees[Number(input.dataset.workFormEmployeeHire)].hireDate=input.value;saveWorkFormState();renderWorkForm();};
+  });
+  const workColor=document.getElementById('workFormWorkColor');
+  const restColor=document.getElementById('workFormRestColor');
+  if(workColor)workColor.oninput=()=>{state.colors.work=workColor.value;saveWorkFormState();renderWorkFormTable();bindWorkFormEvents();};
+  if(restColor)restColor.oninput=()=>{state.colors.rest=restColor.value;saveWorkFormState();renderWorkFormTable();bindWorkFormEvents();};
+  const addRule=document.getElementById('workFormAddRuleBtn');
+  if(addRule)addRule.onclick=()=>{state.rules.push({employeeIndex:'',from:'',to:'',hotel:''});saveWorkFormState();renderWorkForm();document.getElementById('workFormSettings')?.classList.remove('hidden');};
+  document.querySelectorAll('[data-work-form-rule-remove]').forEach(btn=>{
+    btn.onclick=()=>{state.rules.splice(Number(btn.dataset.workFormRuleRemove),1);saveWorkFormState();renderWorkForm();document.getElementById('workFormSettings')?.classList.remove('hidden');};
+  });
+  ['employee','from','to','hotel'].forEach(part=>{
+    document.querySelectorAll(`[data-work-form-rule-${part}]`).forEach(input=>{
+      input.onchange=()=>{const index=Number(input.dataset[`workFormRule${part[0].toUpperCase()+part.slice(1)}`]);state.rules[index][part==='employee'?'employeeIndex':part]=input.value;saveWorkFormState();renderWorkFormTable();bindWorkFormEvents();};
+      input.oninput=input.onchange;
+    });
+  });
+  document.querySelectorAll('[data-work-form-cell-value]').forEach(select=>{
+    select.onchange=()=>{const key=select.dataset.workFormCellValue;state.entries[key]={...(state.entries[key]||{}),value:select.value};saveWorkFormState();renderWorkFormTable();bindWorkFormEvents();};
+  });
+  document.querySelectorAll('[data-work-form-cell-hotel]').forEach(input=>{
+    input.oninput=()=>{const key=input.dataset.workFormCellHotel;state.entries[key]={...(state.entries[key]||{}),hotel:input.value};saveWorkFormState();};
+  });
+}
+function renderWorkForm(){
+  loadWorkFormState();
+  renderWorkFormMonths();
+  renderWorkFormSettings();
+  renderWorkFormTable();
+  bindWorkFormEvents();
+}
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',()=>{if(document.getElementById('workFormTable'))renderWorkForm();});
+}else if(document.getElementById('workFormTable')){
+  renderWorkForm();
+}
 
 const MOBILE_AUTH_USERNAME='sv';
 const MOBILE_AUTH_PASSWORD_SHA256='35aec9393d5db13ccaea57a027ddd8f2428a42d5c3fe8bcfd919a36250a291c1';
@@ -273,12 +504,13 @@ const SECTION_THEME_SECTIONS=[
   {key:'ultra',label:'Ултра Ол Инклузив',buttonId:'toggleUltraBtn',quick:'ultra'},
   {key:'discounts',label:'Отстъпки по хотели',buttonId:'toggleDiscountsBtn',quick:'discounts'},
   {key:'discountReservations',label:'Резервации с отстъпки',buttonId:'toggleDiscountReservationsBtn',quick:'discountReservations'},
+  {key:'form',label:'Форма',buttonId:'toggleWorkFormBtn',quick:'form'},
   {key:'email',label:'Таблица с имейли',selector:'#emailSection',quick:'email'},
   {key:'emailTxt',label:'Email TXT',buttonId:'toggleEmailTxtBtn',quick:'emailTxt'},
   {key:'checklist',label:'Чек лист',buttonId:'toggleChecklistBtn',quick:'checklist'},
   {key:'cancellations',label:'Анулации и Депозити',buttonId:'toggleCancellationsBtn',quick:'cancellations'}
 ];
-const QUICK_ACCESS_DEFAULT_ORDER=['roomTypes','nights','mapping','prices','ultra','discounts','discountReservations','email','contracts','tasks','cancellations'];
+const QUICK_ACCESS_DEFAULT_ORDER=['roomTypes','nights','mapping','prices','ultra','discounts','discountReservations','form','email','contracts','tasks','cancellations'];
 const QUICK_ACCESS_ORDER_KEY='hotel_discount_history_quick_access_order_v202';
 
 const DISCOUNT_RESERVATION_LAYOUT_VERSION=7;
@@ -757,7 +989,7 @@ let lastAcceptedExtraStorageSnapshot={};
 let draggedPeriodId=null, draggedWeekId=null, draggedSubsectionId=null, draggedChecklistItemId=null, draggedRoomTypeId=null, draggedRoomHotelId=null, draggedEmailTxtTemplateId=null;
 const collapsedMonths=new Set();
 const monthNames=['Януари','Февруари','Март','Април','Май','Юни','Юли','Август','Септември','Октомври','Ноември','Декември'];
-const sectionOpen={hotels:false,contracts:false,tasks:false,roomTypes:false,prices:false,ultra:false,discounts:false,discountReservations:false,email:false,emailTxt:false,checklist:false,cancellations:false};
+const sectionOpen={hotels:false,contracts:false,tasks:false,roomTypes:false,prices:false,ultra:false,discounts:false,discountReservations:false,form:false,email:false,emailTxt:false,checklist:false,cancellations:false};
 let roomSettingsOpen=false;
 let roomDisplayControlsOpen=false;
 let roomServicesOpen=false;
@@ -809,6 +1041,7 @@ function setSectionOpen(section,isOpen){
     ultra:{button:'toggleUltraBtn',editor:'ultraEditor',label:'Ултра Ол Инклузив'},
     discounts:{button:'toggleDiscountsBtn',editor:'discountsEditor',label:'Отстъпки по хотели'},
     discountReservations:{button:'toggleDiscountReservationsBtn',editor:'discountReservationsEditor',label:'Резервации с отстъпки'},
+    form:{button:'toggleWorkFormBtn',editor:'workFormEditor',label:'Форма'},
     email:{button:'toggleEmailTableBtn',editor:'emailTableEditor',label:'Таблица с имейли'},
     emailTxt:{button:'toggleEmailTxtBtn',editor:'emailTxtEditor',label:'Email TXT'},
     checklist:{button:'toggleChecklistBtn',editor:'checklistEditor',label:'Чек лист'},
@@ -842,6 +1075,9 @@ function toggleSection(section){
   if(section==='discountReservations'&&sectionOpen.discountReservations){
     renderDiscountReservations();
   }
+  if(section==='form'&&sectionOpen.form){
+    renderWorkForm();
+  }
   if(section==='contracts'&&sectionOpen.contracts){
     renderContracts();
   }
@@ -859,6 +1095,7 @@ function applySectionStates(){
   setSectionOpen('ultra',sectionOpen.ultra);
   setSectionOpen('discounts',sectionOpen.discounts);
   setSectionOpen('discountReservations',sectionOpen.discountReservations);
+  setSectionOpen('form',sectionOpen.form);
   setSectionOpen('email',sectionOpen.email);
   setSectionOpen('emailTxt',sectionOpen.emailTxt);
   setSectionOpen('checklist',sectionOpen.checklist);
@@ -4751,10 +4988,11 @@ function openQuickSection(section){
   if(section==='ultra')renderUltraAllInclusive();
   if(section==='discounts')renderSelectorsAndPeriods();
   if(section==='discountReservations')renderDiscountReservations();
+  if(section==='form')renderWorkForm();
   if(section==='email')renderEmailTable();
   if(section==='emailTxt')renderEmailTxt();
   if(section==='cancellations')renderCancellationPolicy();
-  const targetId={roomTypes:'roomTypesSection',mapping:'toMappingsPanel',contracts:'contractsSection',tasks:'tasksSection',prices:'pricesSection',ultra:'ultraSection',discounts:'discountsSection',discountReservations:'discountReservationsSection',email:'emailSection',emailTxt:'emailTxtSection',cancellations:'cancellationsSection'}[section];
+  const targetId={roomTypes:'roomTypesSection',mapping:'toMappingsPanel',contracts:'contractsSection',tasks:'tasksSection',prices:'pricesSection',ultra:'ultraSection',discounts:'discountsSection',discountReservations:'discountReservationsSection',form:'workFormSection',email:'emailSection',emailTxt:'emailTxtSection',cancellations:'cancellationsSection'}[section];
   const target=targetId?document.getElementById(targetId):null;
   if(target&&target.scrollIntoView)target.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -6670,6 +6908,7 @@ function renderMain(){
 
   document.getElementById('toggleDiscountsBtn').addEventListener('click',()=>toggleSection('discounts'));
   document.getElementById('toggleDiscountReservationsBtn').addEventListener('click',()=>toggleSection('discountReservations'));
+  document.getElementById('toggleWorkFormBtn').addEventListener('click',()=>toggleSection('form'));
   document.getElementById('addDiscountReservationBtn').addEventListener('click',addDiscountReservation);
   document.getElementById('exportDiscountReservationsPdfBtn').addEventListener('click',exportDiscountReservationsPDF);
   document.getElementById('exportDiscountReservationsExcelBtn').addEventListener('click',exportDiscountReservationsExcel);
