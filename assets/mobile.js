@@ -1372,6 +1372,10 @@ if(toggleGoogleUrlBtn){
 document.getElementById('testGoogleSyncBtn').addEventListener('click',testGoogleSheetsSync);
 document.getElementById('saveGoogleSyncBtn').addEventListener('click',saveToGoogleSheets);
 document.getElementById('loadGoogleSyncBtn').addEventListener('click',loadFromGoogleSheets);
+document.getElementById('googleBackupsBtn').addEventListener('click',toggleGoogleBackups);
+document.getElementById('refreshGoogleBackupsBtn').addEventListener('click',loadGoogleBackups);
+document.getElementById('chooseGoogleBackupFileBtn').addEventListener('click',()=>document.getElementById('googleBackupFileInput').click());
+document.getElementById('googleBackupFileInput').addEventListener('change',importGoogleBackupFile);
 document.addEventListener('click',event=>{
   const button=event.target&&event.target.closest?event.target.closest('[data-cancel-changes]'):null;
   if(!button)return;
@@ -8775,7 +8779,7 @@ function setGoogleSyncStatus(message,type){
   status.textContent=message;
 }
 function setGoogleSyncBusy(isBusy){
-  ['testGoogleSyncBtn','saveGoogleSyncBtn','loadGoogleSyncBtn'].forEach(id=>{
+  ['testGoogleSyncBtn','saveGoogleSyncBtn','loadGoogleSyncBtn','googleBackupsBtn','refreshGoogleBackupsBtn'].forEach(id=>{
     const btn=document.getElementById(id);
     if(btn)btn.disabled=!!isBusy;
   });
@@ -8959,6 +8963,132 @@ async function saveToGoogleSheets(){
   }finally{
     setGoogleSyncBusy(false);
   }
+}
+let googleBackups=[];
+function formatGoogleBackupSize(bytes){
+  const size=Number(bytes)||0;
+  if(size>=1024*1024)return (size/(1024*1024)).toLocaleString('bg-BG',{maximumFractionDigits:1})+' MB';
+  return Math.max(1,Math.round(size/1024)).toLocaleString('bg-BG')+' KB';
+}
+function toggleGoogleBackups(){
+  const panel=document.getElementById('googleBackupsPanel');
+  if(!panel)return;
+  const willOpen=panel.classList.contains('hidden');
+  panel.classList.toggle('hidden',!willOpen);
+  if(willOpen)loadGoogleBackups();
+}
+function renderGoogleBackups(){
+  const list=document.getElementById('googleBackupsList');
+  if(!list)return;
+  if(!googleBackups.length){
+    list.innerHTML='<div class="google-backups-empty">Няма намерени backup-и.</div>';
+    return;
+  }
+  list.innerHTML=googleBackups.map((backup,index)=>{
+    const size=Number(backup.size)||0;
+    const full=size>=500000;
+    const date=backup.created?new Date(backup.created).toLocaleString('bg-BG'):'Без дата';
+    return `<div class="google-backup-row">
+      <div class="google-backup-info">
+        <strong>${escapeHtml(date)}</strong>
+        <span>${escapeHtml(formatGoogleBackupSize(size))}</span>
+        <em class="${full?'full':'small'}">${full?'Пълен':'Малък'}</em>
+      </div>
+      <button class="small" type="button" data-google-backup-index="${index}">Възстанови</button>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('[data-google-backup-index]').forEach(button=>{
+    button.addEventListener('click',()=>restoreGoogleBackup(Number(button.dataset.googleBackupIndex)));
+  });
+}
+async function loadGoogleBackups(){
+  const url=getGoogleScriptUrl();
+  if(!url)return;
+  setGoogleSyncBusy(true);
+  setGoogleSyncStatus('Търся наличните Google backup-и...', '');
+  try{
+    const response=await googleJsonpRequest(url,{action:'backups'});
+    if(!response||!response.ok||!Array.isArray(response.backups))throw new Error(response&&response.error?response.error:'Не получих списък с backup-и.');
+    googleBackups=response.backups.slice().sort((a,b)=>new Date(b.created||0)-new Date(a.created||0));
+    renderGoogleBackups();
+    setGoogleSyncStatus('Намерени backup-и: '+googleBackups.length+'. Избери дата за възстановяване.', 'ok');
+  }catch(error){
+    console.error(error);
+    setGoogleSyncStatus('Грешка при зареждане на backup-и: '+error.message, 'error');
+  }finally{
+    setGoogleSyncBusy(false);
+  }
+}
+function extractGoogleBackupState(payload){
+  const candidate=payload&&payload.state?payload.state:payload;
+  if(!candidate||!Array.isArray(candidate.weeks))throw new Error('Избраният файл не съдържа валиден архив.');
+  if(candidate.weeks.length===0)throw new Error('Избраният backup е празен (0 седмици) и няма да бъде зареден.');
+  return candidate;
+}
+function applyGoogleBackupPayload(payload,label){
+  const restored=normalizeState(extractGoogleBackupState(payload));
+  state=restored;
+  activeWeekId=state.activeWeekId||(state.weeks[0]&&state.weeks[0].id)||null;
+  cleanupOldHistoryKeys();
+  const localSaved=saveStateSafe();
+  applyRoomInfoDisplaySettings();
+  captureAcceptedStateSnapshot({skipEditorSync:true});
+  render();
+  setGoogleSyncStatus('Възстановен backup: '+label+(localSaved?'':' · Локалният fallback не се обнови.'),localSaved?'ok':'warn');
+}
+function googleBackupDownloadUrl(backup){
+  return 'https://drive.google.com/uc?export=download&id='+encodeURIComponent(backup.id);
+}
+function downloadGoogleBackup(backup){
+  const link=document.createElement('a');
+  link.href=googleBackupDownloadUrl(backup);
+  link.target='_blank';
+  link.rel='noopener';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+async function restoreGoogleBackup(index){
+  const backup=googleBackups[index];
+  if(!backup)return;
+  const date=backup.created?new Date(backup.created).toLocaleString('bg-BG'):backup.name;
+  if(!confirm('Backup от '+date+' ще замени текущите данни в този браузър. Продължаваме ли?'))return;
+  setGoogleSyncBusy(true);
+  setGoogleSyncStatus('Възстановявам backup от '+date+'...', '');
+  try{
+    const response=await fetch('/__google_drive_backup?id='+encodeURIComponent(backup.id),{cache:'no-store'});
+    if(!response.ok)throw new Error('Автоматичното изтегляне не е достъпно в този режим.');
+    applyGoogleBackupPayload(await response.json(),date);
+  }catch(error){
+    console.warn(error);
+    downloadGoogleBackup(backup);
+    setGoogleSyncStatus('Backup-ът се изтегля. Натисни „Избери backup файл“ и посочи изтегления JSON.', 'warn');
+  }finally{
+    setGoogleSyncBusy(false);
+  }
+}
+function importGoogleBackupFile(event){
+  const file=event.target.files&&event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const payload=JSON.parse(reader.result);
+      const candidate=extractGoogleBackupState(payload);
+      if(!confirm('Файлът „'+file.name+'“ съдържа '+candidate.weeks.length+' седмици и ще замени текущите данни. Продължаваме ли?'))return;
+      applyGoogleBackupPayload(payload,file.name);
+    }catch(error){
+      console.error(error);
+      setGoogleSyncStatus('Неуспешно възстановяване: '+error.message,'error');
+    }finally{
+      event.target.value='';
+    }
+  };
+  reader.onerror=()=>{
+    setGoogleSyncStatus('Не успях да прочета избрания backup файл.','error');
+    event.target.value='';
+  };
+  reader.readAsText(file);
 }
 async function loadFromGoogleSheets(){
   const url=getGoogleScriptUrl();
