@@ -71,6 +71,16 @@
         <button class="small hidden" id="testGoogleSyncBtn" type="button">Тест</button>
         <button class="small success" id="saveGoogleSyncBtn" type="button">Запази</button>
         <button class="small" id="loadGoogleSyncBtn" type="button">Зареди</button>
+        <button class="small" id="googleBackupsBtn" type="button">Бекъпи</button>
+      </div>
+      <div id="googleBackupsPanel" class="google-backups-panel hidden">
+        <div class="google-backups-head">
+          <strong>Google backup-и</strong>
+          <button class="small" id="refreshGoogleBackupsBtn" type="button">Обнови</button>
+        </div>
+        <div id="googleBackupsList" class="google-backups-list"></div>
+        <button class="small google-backup-file-btn" id="chooseGoogleBackupFileBtn" type="button">Избери backup файл</button>
+        <input class="hidden" id="googleBackupFileInput" type="file" accept="application/json,.json" />
       </div>
       <div id="googleSyncStatus" class="cloud-status">URL е скрит. Натисни „URL“ само ако трябва да го промениш.</div>
     </div>
