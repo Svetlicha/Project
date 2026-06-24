@@ -8780,14 +8780,16 @@ function setGoogleSyncBusy(isBusy){
     if(btn)btn.disabled=!!isBusy;
   });
 }
-function googleJsonpRequest(url,params={}){
+function googleJsonpRequest(url,params={},attempt=0){
   return new Promise((resolve,reject)=>{
     const callbackName='googleSheetsSyncCallback_'+Date.now()+'_'+Math.random().toString(16).slice(2);
     const script=document.createElement('script');
     const timer=setTimeout(()=>{
       cleanup();
-      reject(new Error('Няма отговор от Google Apps Script.'));
-    },30000);
+      const error=new Error('Няма отговор от Google Apps Script.');
+      error.googleJsonpTimeout=true;
+      reject(error);
+    },60000);
     function cleanup(){
       clearTimeout(timer);
       if(script.parentNode)script.parentNode.removeChild(script);
@@ -8803,10 +8805,24 @@ function googleJsonpRequest(url,params={}){
     finalUrl.searchParams.set('_',Date.now());
     script.onerror=()=>{
       cleanup();
-      reject(new Error('Неуспешно зареждане от Apps Script. Провери URL адреса и дали web app е публикуван с достъп.'));
+      const error=new Error('Неуспешно зареждане от Apps Script. Провери URL адреса и дали web app е публикуван с достъп.');
+      error.googleJsonpNetwork=true;
+      reject(error);
     };
     script.src=finalUrl.toString();
     document.body.appendChild(script);
+  }).catch(error=>{
+    if(error&&(error.googleJsonpTimeout||error.googleJsonpNetwork)&&attempt<1){
+      setGoogleSyncStatus('Google Apps Script отговаря бавно. Опитвам отново...', 'warn');
+      return new Promise(resolve=>window.setTimeout(resolve,1500)).then(()=>googleJsonpRequest(url,params,attempt+1));
+    }
+    if(error&&error.googleJsonpTimeout){
+      throw new Error('Няма отговор от Google Apps Script след два опита. Провери интернет връзката и Apps Script URL адреса.');
+    }
+    if(error&&error.googleJsonpNetwork){
+      throw new Error('Google Apps Script не се зареди след два опита. Провери интернет връзката и Apps Script URL адреса.');
+    }
+    throw error;
   });
 }
 async function testGoogleSheetsSync(){
@@ -8954,6 +8970,9 @@ async function loadFromGoogleSheets(){
     const response=await googleJsonpRequest(url,{action:'load'});
     if(!response||!response.ok)throw new Error(response&&response.error?response.error:'Невалиден отговор от Apps Script.');
     if(!response.state||!Array.isArray(response.state.weeks))throw new Error('В Google Drive JSON файла няма валидна база за този файл.');
+    if(response.state.weeks.length===0&&state&&Array.isArray(state.weeks)&&state.weeks.length>0){
+      throw new Error('Google Drive JSON е празен (0 седмици). Локалните данни са запазени и няма да бъдат заменени.');
+    }
     state=normalizeState(response.state);
     activeWeekId=state.activeWeekId||(state.weeks[0]&&state.weeks[0].id)||null;
     cleanupOldHistoryKeys();
@@ -8983,6 +9002,11 @@ async function googleDriveAutosaveTick(){
   if(!url||!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec/.test(url))return;
   syncVisibleEditorsBeforeGoogleSave();
   saveState();
+  if(!state||!Array.isArray(state.weeks)||state.weeks.length===0){
+    googleAutosaveDirty=false;
+    setGoogleSyncStatus('Autosave е пропуснат: локалната база няма седмици.', 'warn');
+    return;
+  }
   const snapshot=JSON.stringify(state);
   if(snapshot===googleAutosaveLastSnapshot){googleAutosaveDirty=false;return;}
   googleAutosaveInProgress=true;
@@ -9056,6 +9080,10 @@ async function autoLoadLatestJsonFromGoogleDriveOnStartup(){
     const response=await googleJsonpRequest(url,{action:'load',autoload:'1'});
     if(!response||!response.ok)throw new Error(response&&response.error?response.error:'Невалиден отговор от Apps Script.');
     if(response.state&&Array.isArray(response.state.weeks)){
+      if(response.state.weeks.length===0&&state&&Array.isArray(state.weeks)&&state.weeks.length>0){
+        setGoogleSyncStatus('Google Drive JSON е празен (0 седмици). Локалните данни остават заредени.', 'warn');
+        return;
+      }
       state=normalizeState(response.state);
       activeWeekId=state.activeWeekId||(state.weeks[0]&&state.weeks[0].id)||null;
       cleanupOldHistoryKeys();
