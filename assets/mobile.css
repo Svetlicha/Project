@@ -4050,6 +4050,21 @@
     .google-drive-icon{width:20px;height:20px;display:inline-block;flex:0 0 auto;object-fit:contain}
     .cloud-sync .button-row{display:grid!important;grid-template-columns:1fr!important;gap:6px!important;margin-top:8px!important}
     .cloud-sync .button-row button{width:100%!important;justify-content:center!important}
+    .google-backups-panel{margin-top:8px;padding-top:8px;border-top:1px solid #dbeafe}
+    .google-backups-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px}
+    .google-backups-head strong{font-size:12px;color:#1e3a8a}
+    .google-backups-head button{width:auto!important;padding:5px 7px!important;font-size:10px!important}
+    .google-backups-list{display:flex;flex-direction:column;gap:5px;max-height:260px;overflow:auto}
+    .google-backup-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;padding:6px;border:1px solid #dbeafe;border-radius:8px;background:#fff}
+    .google-backup-row button{padding:5px 7px!important;font-size:10px!important}
+    .google-backup-info{display:grid;grid-template-columns:1fr auto;gap:2px 5px;min-width:0}
+    .google-backup-info strong{grid-column:1/-1;font-size:10px;line-height:1.25;color:#1f2937}
+    .google-backup-info span{font-size:10px;color:#64748b}
+    .google-backup-info em{justify-self:start;padding:1px 5px;border-radius:999px;font-size:9px;font-style:normal;font-weight:900}
+    .google-backup-info em.full{background:#dcfce7;color:#166534}
+    .google-backup-info em.small{background:#fef3c7;color:#92400e}
+    .google-backups-empty{padding:8px;font-size:11px;color:#64748b;text-align:center}
+    .google-backup-file-btn{width:100%!important;margin-top:6px!important;font-size:10px!important}
     #testGoogleSyncBtn{display:none!important}
     #googleSyncStatus.ok{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:28px;margin-top:8px!important;padding:6px 10px!important;border:1px solid #86efac!important;border-radius:999px!important;background:#dcfce7!important;color:#166534!important;font-weight:900!important;max-width:100%}
     #googleSyncStatus.error{border:1px solid #fecaca!important;background:#fef2f2!important;color:#991b1b!important;border-radius:12px!important;padding:8px!important}
