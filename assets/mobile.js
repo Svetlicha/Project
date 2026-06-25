@@ -5260,18 +5260,25 @@ function updateHotelNightsMonthUI(hotel,year,month){
     summary.innerHTML=`Гости: <strong>${formatHotelNightsNumber(guest)}</strong> · Стаи: <strong>${formatHotelNightsNumber(hotelMetricMonthValue(hotel,'room',year,month))}</strong> · Приходи: <strong>${formatHotelRevenue(revenue)}</strong> · ADR: <strong>${formatHotelAdr(revenue,guest)}</strong>`;
   }
 }
-function hotelNightsMonthCard(hotel,metric,month,label){
+function hotelNightsMonthCard(hotel,month,label){
   const year=hotelNightsYear,previousYear=year-1;
-  const value=hotelMetricMonthValue(hotel,metric,year,month);
-  const previous=hotelMetricMonthValue(hotel,metric,previousYear,month);
-  const format=metric==='revenue'?formatHotelRevenue:formatHotelNightsNumber;
-  const adr=metric==='revenue'?`<div class="hotel-nights-month-adr">ADR ${year}: <strong data-hotel-month-adr="${year}:${month}">${formatHotelAdr(value,hotelMetricMonthValue(hotel,'guest',year,month))}</strong></div>`:'';
-  const target=metric==='room'?`<label class="hotel-nights-target-field" onclick="event.stopPropagation()"><span>Таргет ${year}</span><input type="number" min="0" step="1" inputmode="numeric" value="${escapeAttr(ensureHotelRoomNightsTargets(hotel)[`${year}-${String(month).padStart(2,'0')}`]||'')}" data-hotel-room-target-input="${escapeAttr(hotel.id)}" data-year="${year}" data-month="${month}" placeholder="0" /></label>`:'';
-  return `<div class="hotel-nights-month metric-card" role="button" tabindex="0" data-open-hotel-nights-month="${month}">
-    <label>${escapeHtml(label)}</label>
-    <div class="hotel-nights-year-value"><span>${year}</span><strong data-hotel-month-value="${metric}:${year}:${month}">${format(value)}</strong></div>
-    <div class="hotel-nights-year-value previous"><span>${previousYear}</span><strong data-hotel-month-value="${metric}:${previousYear}:${month}">${format(previous)}</strong></div>
-    ${target}${adr}
+  const guest=hotelMetricMonthValue(hotel,'guest',year,month);
+  const guestPrevious=hotelMetricMonthValue(hotel,'guest',previousYear,month);
+  const room=hotelMetricMonthValue(hotel,'room',year,month);
+  const roomPrevious=hotelMetricMonthValue(hotel,'room',previousYear,month);
+  const revenue=hotelMetricMonthValue(hotel,'revenue',year,month);
+  const revenuePrevious=hotelMetricMonthValue(hotel,'revenue',previousYear,month);
+  const targets=ensureHotelRoomNightsTargets(hotel);
+  const targetKey=`${year}-${String(month).padStart(2,'0')}`;
+  const previousTargetKey=`${previousYear}-${String(month).padStart(2,'0')}`;
+  return `<div class="hotel-nights-month metric-card combined" role="button" tabindex="0" data-open-hotel-nights-month="${month}">
+    <div class="hotel-nights-month-name">${escapeHtml(label)}</div>
+    <div class="hotel-nights-comparison-head"><span>Показател</span><strong>${year}</strong><strong>${previousYear}</strong></div>
+    <div class="hotel-nights-comparison-row"><span>Нощувки гости</span><strong data-hotel-month-value="guest:${year}:${month}">${formatHotelNightsNumber(guest)}</strong><strong data-hotel-month-value="guest:${previousYear}:${month}">${formatHotelNightsNumber(guestPrevious)}</strong></div>
+    <div class="hotel-nights-comparison-row"><span>Нощувки стаи</span><strong data-hotel-month-value="room:${year}:${month}">${formatHotelNightsNumber(room)}</strong><strong data-hotel-month-value="room:${previousYear}:${month}">${formatHotelNightsNumber(roomPrevious)}</strong></div>
+    <div class="hotel-nights-comparison-row target"><span>Таргет нощувки</span><input onclick="event.stopPropagation()" type="number" min="0" step="1" inputmode="numeric" value="${escapeAttr(targets[targetKey]||'')}" data-hotel-room-target-input="${escapeAttr(hotel.id)}" data-year="${year}" data-month="${month}" placeholder="0" /><strong>${formatHotelNightsNumber(targets[previousTargetKey]||0)}</strong></div>
+    <div class="hotel-nights-comparison-row"><span>Приходи</span><strong data-hotel-month-value="revenue:${year}:${month}">${formatHotelRevenue(revenue)}</strong><strong data-hotel-month-value="revenue:${previousYear}:${month}">${formatHotelRevenue(revenuePrevious)}</strong></div>
+    <div class="hotel-nights-comparison-row adr"><span>ADR</span><strong data-hotel-month-adr="${year}:${month}">${formatHotelAdr(revenue,guest)}</strong><strong data-hotel-month-adr="${previousYear}:${month}">${formatHotelAdr(revenuePrevious,guestPrevious)}</strong></div>
   </div>`;
 }
 function renderHotelNightsDialog(hotel,year,month){
@@ -5324,9 +5331,7 @@ function renderHotelNights(){
     const roomTotal=formatHotelNightsNumber(hotelRoomNightsTotal(hotel,hotelNightsYear));
     return `<button class="hotel-nights-tab small${hotel.id===selected.id?' active':''}" type="button" data-select-hotel-nights="${escapeAttr(hotel.id)}"><span class="hotel-nights-tab-name">${escapeHtml(name)}</span><span class="hotel-nights-tab-total">Нощувки гости: <span data-hotel-nights-total="${escapeAttr(hotel.id)}">${guestTotal}</span></span><span class="hotel-nights-tab-total">Нощувки стаи: <span data-hotel-room-nights-total="${escapeAttr(hotel.id)}">${roomTotal}</span></span></button>`;
   }).join('');
-  const guestMonths=(monthNames||[]).map((m,i)=>hotelNightsMonthCard(selected,'guest',i+1,m)).join('');
-  const roomMonths=(monthNames||[]).map((m,i)=>hotelNightsMonthCard(selected,'room',i+1,m)).join('');
-  const revenueMonths=(monthNames||[]).map((m,i)=>hotelNightsMonthCard(selected,'revenue',i+1,m)).join('');
+  const monthCards=(monthNames||[]).map((m,i)=>hotelNightsMonthCard(selected,i+1,m)).join('');
   const guestYearTotal=formatHotelNightsNumber(hotelNightsTotal(selected,hotelNightsYear));
   const roomYearTotal=formatHotelNightsNumber(hotelRoomNightsTotal(selected,hotelNightsYear));
   const targetYearTotal=formatHotelNightsNumber(hotelRoomNightsTargetsTotal(selected,hotelNightsYear));
@@ -5351,16 +5356,8 @@ function renderHotelNights(){
       </div>
     </div>
     <div class="hotel-nights-table">
-      <div class="hotel-nights-table-head"><div><div class="hotel-nights-table-title">Нощувки гости</div><div class="hotel-nights-table-note">Избраната година се сравнява с предходната. Натисни месец за дневно въвеждане.</div></div></div>
-      <div class="hotel-nights-grid">${guestMonths}</div>
-    </div>
-    <div class="hotel-nights-table">
-      <div class="hotel-nights-table-head"><div><div class="hotel-nights-table-title">Нощувки стаи</div><div class="hotel-nights-table-note">Реализирани нощувки по години и отделен таргет за избраната година.</div></div></div>
-      <div class="hotel-nights-grid">${roomMonths}</div>
-    </div>
-    <div class="hotel-nights-table">
-      <div class="hotel-nights-table-head"><div><div class="hotel-nights-table-title">Приходи и ADR</div><div class="hotel-nights-table-note">Приходът се показва с разделители за хиляди. ADR = приходи / нощувки гости.</div></div></div>
-      <div class="hotel-nights-grid">${revenueMonths}</div>
+      <div class="hotel-nights-table-head"><div><div class="hotel-nights-table-title">Месечно сравнение</div><div class="hotel-nights-table-note">Всички показатели са събрани по месеци. Натисни месец, за да попълниш стойностите към дата.</div></div></div>
+      <div class="hotel-nights-grid combined-grid">${monthCards}</div>
     </div>
     <div class="hotel-nights-help">За месечен резултат се използва най-голямата въведена натрупана стойност към дата, а не сборът на дневните записи.</div>
     ${dialog}
@@ -5378,12 +5375,14 @@ function renderHotelNights(){
     input.addEventListener('click',event=>event.stopPropagation());
     input.addEventListener('input',e=>updateHotelNightsValue(e.target.dataset.hotelRoomTargetInput,Number(e.target.dataset.year),Number(e.target.dataset.month),e.target.value,'target'));
     input.addEventListener('blur',flushScheduledSilentStateSave);
+    input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();input.blur();}});
   });
   wrap.querySelectorAll('[data-close-hotel-nights-dialog]').forEach(button=>button.addEventListener('click',closeHotelNightsDialog));
   wrap.querySelectorAll('[data-hotel-daily-metric]').forEach(input=>{
     input.addEventListener('focus',()=>{if(input.dataset.hotelDailyMetric==='revenue')input.value=input.value.replace(/\s/g,'');});
     input.addEventListener('input',()=>updateHotelDailyMetric(selected.id,input.dataset.date,input.value,input.dataset.hotelDailyMetric));
     input.addEventListener('blur',()=>{if(input.dataset.hotelDailyMetric==='revenue'&&input.value)input.value=formatHotelRevenue(input.value);flushScheduledSilentStateSave();});
+    input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();updateHotelDailyMetric(selected.id,input.dataset.date,input.value,input.dataset.hotelDailyMetric);closeHotelNightsDialog();}});
   });
   if(hotelNightsDialog&&hotelNightsDialog.hotelId===selected.id)updateHotelNightsMonthUI(selected,hotelNightsDialog.year,hotelNightsDialog.month);
   applyAllSectionThemes();
