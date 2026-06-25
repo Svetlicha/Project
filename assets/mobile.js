@@ -999,6 +999,7 @@ let activeToMappingGroupId=null;
 let emailTablePinned=false;
 let hotelNightsOpen=false;
 let hotelNightsYear=new Date().getFullYear();
+let hotelNightsDialog=null;
 
 
 const SIDEBAR_COLLAPSE_KEY='hotel_discount_sidebar_collapsed_v164';
@@ -4063,7 +4064,7 @@ function normalizeState(input){
 }
 function normalizeHotels(hotels,week){
   const normalized=hotels.map((hotel,index)=>{
-    const h={id:hotel.id||uid()+'_h'+index,name:hotel.name||'',operationFrom:hotel.operationFrom||'',operationTo:hotel.operationTo||'',roomCount:hotel.roomCount||hotel.roomsCount||hotel.totalRooms||'',roomTypesLocked:!!hotel.roomTypesLocked,toMappingsLocked:!!hotel.toMappingsLocked,toMappingGroups:normalizeToMappingGroups(hotel.toMappingGroups||hotel.toMappingsGroups||hotel.operatorGroups||hotel.tourOperatorGroups||[],hotel.toMappings||hotel.toTypeMappings||hotel.operatorMappings||hotel.tourOperatorMappings||[]),roomServiceCatalog:normalizeRoomServiceCatalog(hotel.roomServiceCatalog||hotel.serviceCatalog||hotel.roomServices||[]),roomTypes:normalizeRoomTypes(hotel.roomTypes||[]),selectedSubsectionId:hotel.selectedSubsectionId||null,subsections:[],checklist:normalizeChecklistItems(hotel.checklist||[]),emailTableHtml:hotel.emailTableHtml||'',contracts:normalizeContracts(hotel.contracts||[]),selectedContractId:hotel.selectedContractId||null,nightsByMonth:normalizeHotelNights(hotel.nightsByMonth||hotel.hotelNights||hotel.nights||{}),roomNightsByMonth:normalizeHotelNights(hotel.roomNightsByMonth||hotel.roomHotelNights||hotel.roomNights||{}),roomNightsTargetsByMonth:normalizeHotelNights(hotel.roomNightsTargetsByMonth||hotel.roomNightTargets||hotel.roomNightsTargets||{})};
+    const h={id:hotel.id||uid()+'_h'+index,name:hotel.name||'',operationFrom:hotel.operationFrom||'',operationTo:hotel.operationTo||'',roomCount:hotel.roomCount||hotel.roomsCount||hotel.totalRooms||'',roomTypesLocked:!!hotel.roomTypesLocked,toMappingsLocked:!!hotel.toMappingsLocked,toMappingGroups:normalizeToMappingGroups(hotel.toMappingGroups||hotel.toMappingsGroups||hotel.operatorGroups||hotel.tourOperatorGroups||[],hotel.toMappings||hotel.toTypeMappings||hotel.operatorMappings||hotel.tourOperatorMappings||[]),roomServiceCatalog:normalizeRoomServiceCatalog(hotel.roomServiceCatalog||hotel.serviceCatalog||hotel.roomServices||[]),roomTypes:normalizeRoomTypes(hotel.roomTypes||[]),selectedSubsectionId:hotel.selectedSubsectionId||null,subsections:[],checklist:normalizeChecklistItems(hotel.checklist||[]),emailTableHtml:hotel.emailTableHtml||'',contracts:normalizeContracts(hotel.contracts||[]),selectedContractId:hotel.selectedContractId||null,nightsByMonth:normalizeHotelNights(hotel.nightsByMonth||hotel.hotelNights||hotel.nights||{}),roomNightsByMonth:normalizeHotelNights(hotel.roomNightsByMonth||hotel.roomHotelNights||hotel.roomNights||{}),roomNightsTargetsByMonth:normalizeHotelNights(hotel.roomNightsTargetsByMonth||hotel.roomNightTargets||hotel.roomNightsTargets||{}),revenueByMonth:normalizeHotelNights(hotel.revenueByMonth||hotel.revenuesByMonth||{}),guestNightsDaily:normalizeHotelDailyMetric(hotel.guestNightsDaily||{}),roomNightsDaily:normalizeHotelDailyMetric(hotel.roomNightsDaily||{}),revenueDaily:normalizeHotelDailyMetric(hotel.revenueDaily||{})};
     if(Array.isArray(hotel.subsections)){
       h.subsections=hotel.subsections.map((s,i)=>({id:s.id||uid()+'_s'+i,name:s.name||`Канал ${i+1}`,locked:!!s.locked,periods:normalizePeriods(s.periods||[],week)}));
     } else if(Array.isArray(hotel.periods)) {
@@ -4716,7 +4717,7 @@ function createHotelsFromTemplate(){
   const hotels=templateWeek.hotels.map((hotel,index)=>{
     const source=hotel.subsections&&hotel.subsections.length?hotel.subsections:defaultSubsections();
     const subsections=source.map((s,i)=>({id:uid()+'_s'+i,name:s.name||`Канал ${i+1}`,locked:false,periods:[]}));
-    return{id:uid()+'_h'+index,name:hotel.name||'',operationFrom:hotel.operationFrom||'',operationTo:hotel.operationTo||'',roomCount:hotel.roomCount||hotel.roomsCount||hotel.totalRooms||'',roomTypesLocked:!!hotel.roomTypesLocked,toMappingsLocked:!!hotel.toMappingsLocked,toMappingGroups:cloneToMappingGroups(hotel.toMappingGroups||[],hotel.toMappings||[]),roomServiceCatalog:cloneRoomServiceCatalog(hotel.roomServiceCatalog||[]),roomTypes:(hotel.roomTypes||[]).map((item,i)=>({id:uid()+'_r'+i,name:item.name||'',typeLabel:item.typeLabel||item.kind||item.type||'',squareMeters:item.squareMeters||item.sqm||item.areaM2||'',priceCapacity:item.priceCapacity||item.pricingCapacity||'',capacities:normalizeRoomCapacities(item),services:Array.isArray(item.services)?item.services.slice():(item.service?[item.service]:[])})),nightsByMonth:normalizeHotelNights(hotel.nightsByMonth||hotel.hotelNights||hotel.nights||{}),roomNightsByMonth:normalizeHotelNights(hotel.roomNightsByMonth||hotel.roomHotelNights||hotel.roomNights||{}),roomNightsTargetsByMonth:normalizeHotelNights(hotel.roomNightsTargetsByMonth||hotel.roomNightTargets||hotel.roomNightsTargets||{}),selectedSubsectionId:subsections[0]?subsections[0].id:null,subsections,checklist:(hotel.checklist||[]).map((item,i)=>({id:uid()+'_c'+i,text:item.text||'',done:false})),emailTableHtml:'',contracts:cloneContracts(hotel.contracts||[]),selectedContractId:hotel.selectedContractId||null};
+    return{id:uid()+'_h'+index,name:hotel.name||'',operationFrom:hotel.operationFrom||'',operationTo:hotel.operationTo||'',roomCount:hotel.roomCount||hotel.roomsCount||hotel.totalRooms||'',roomTypesLocked:!!hotel.roomTypesLocked,toMappingsLocked:!!hotel.toMappingsLocked,toMappingGroups:cloneToMappingGroups(hotel.toMappingGroups||[],hotel.toMappings||[]),roomServiceCatalog:cloneRoomServiceCatalog(hotel.roomServiceCatalog||[]),roomTypes:(hotel.roomTypes||[]).map((item,i)=>({id:uid()+'_r'+i,name:item.name||'',typeLabel:item.typeLabel||item.kind||item.type||'',squareMeters:item.squareMeters||item.sqm||item.areaM2||'',priceCapacity:item.priceCapacity||item.pricingCapacity||'',capacities:normalizeRoomCapacities(item),services:Array.isArray(item.services)?item.services.slice():(item.service?[item.service]:[])})),nightsByMonth:normalizeHotelNights(hotel.nightsByMonth||hotel.hotelNights||hotel.nights||{}),roomNightsByMonth:normalizeHotelNights(hotel.roomNightsByMonth||hotel.roomHotelNights||hotel.roomNights||{}),roomNightsTargetsByMonth:normalizeHotelNights(hotel.roomNightsTargetsByMonth||hotel.roomNightTargets||hotel.roomNightsTargets||{}),revenueByMonth:normalizeHotelNights(hotel.revenueByMonth||hotel.revenuesByMonth||{}),guestNightsDaily:normalizeHotelDailyMetric(hotel.guestNightsDaily||{}),roomNightsDaily:normalizeHotelDailyMetric(hotel.roomNightsDaily||{}),revenueDaily:normalizeHotelDailyMetric(hotel.revenueDaily||{}),selectedSubsectionId:subsections[0]?subsections[0].id:null,subsections,checklist:(hotel.checklist||[]).map((item,i)=>({id:uid()+'_c'+i,text:item.text||'',done:false})),emailTableHtml:'',contracts:cloneContracts(hotel.contracts||[]),selectedContractId:hotel.selectedContractId||null};
   });
   while(hotels.length<5){const subsections=defaultSubsections();hotels.push({id:uid(),name:'',operationFrom:'',operationTo:'',roomCount:'',roomTypesLocked:false,toMappingsLocked:false,toMappingGroups:[],roomServiceCatalog:[],roomTypes:[],selectedSubsectionId:subsections[0].id,subsections,checklist:[],emailTableHtml:'',contracts:[],selectedContractId:null,nightsByMonth:{},roomNightsByMonth:{},roomNightsTargetsByMonth:{}})}
   return hotels;
@@ -4754,7 +4755,7 @@ function duplicateWeek(){
       roomTypesLocked:!!hotel.roomTypesLocked,
       roomServiceCatalog:cloneRoomServiceCatalog(hotel.roomServiceCatalog||[]),
       roomTypes:(hotel.roomTypes||[]).map((item,i)=>({id:uid()+'_r'+i,name:item.name||'',typeLabel:item.typeLabel||item.kind||item.type||'',squareMeters:item.squareMeters||item.sqm||item.areaM2||'',priceCapacity:item.priceCapacity||item.pricingCapacity||'',capacities:normalizeRoomCapacities(item),services:Array.isArray(item.services)?item.services.slice():(item.service?[item.service]:[])})),
-      nightsByMonth:normalizeHotelNights(hotel.nightsByMonth||hotel.hotelNights||hotel.nights||{}),roomNightsByMonth:normalizeHotelNights(hotel.roomNightsByMonth||hotel.roomHotelNights||hotel.roomNights||{}),roomNightsTargetsByMonth:normalizeHotelNights(hotel.roomNightsTargetsByMonth||hotel.roomNightTargets||hotel.roomNightsTargets||{}),
+      nightsByMonth:normalizeHotelNights(hotel.nightsByMonth||hotel.hotelNights||hotel.nights||{}),roomNightsByMonth:normalizeHotelNights(hotel.roomNightsByMonth||hotel.roomHotelNights||hotel.roomNights||{}),roomNightsTargetsByMonth:normalizeHotelNights(hotel.roomNightsTargetsByMonth||hotel.roomNightTargets||hotel.roomNightsTargets||{}),revenueByMonth:normalizeHotelNights(hotel.revenueByMonth||hotel.revenuesByMonth||{}),guestNightsDaily:normalizeHotelDailyMetric(hotel.guestNightsDaily||{}),roomNightsDaily:normalizeHotelDailyMetric(hotel.roomNightsDaily||{}),revenueDaily:normalizeHotelDailyMetric(hotel.revenueDaily||{}),
       selectedSubsectionId:subsections[selectedSubsectionIndex] ? subsections[selectedSubsectionIndex].id : (subsections[0]?subsections[0].id:null),
       subsections,
       checklist:(hotel.checklist||[]).map((item,i)=>({id:uid()+'_c'+i,text:item.text||'',done:false})),
@@ -4799,7 +4800,7 @@ function cloneHotelConstants(hotel){
     roomTypes:cloneRoomTypes(hotel.roomTypes||[]),
     contracts:cloneContracts(hotel.contracts||[]),
     selectedContractId:hotel.selectedContractId||null,
-    nightsByMonth:normalizeHotelNights(hotel.nightsByMonth||hotel.hotelNights||hotel.nights||{}),roomNightsByMonth:normalizeHotelNights(hotel.roomNightsByMonth||hotel.roomHotelNights||hotel.roomNights||{}),roomNightsTargetsByMonth:normalizeHotelNights(hotel.roomNightsTargetsByMonth||hotel.roomNightTargets||hotel.roomNightsTargets||{})
+    nightsByMonth:normalizeHotelNights(hotel.nightsByMonth||hotel.hotelNights||hotel.nights||{}),roomNightsByMonth:normalizeHotelNights(hotel.roomNightsByMonth||hotel.roomHotelNights||hotel.roomNights||{}),roomNightsTargetsByMonth:normalizeHotelNights(hotel.roomNightsTargetsByMonth||hotel.roomNightTargets||hotel.roomNightsTargets||{}),revenueByMonth:normalizeHotelNights(hotel.revenueByMonth||hotel.revenuesByMonth||{}),guestNightsDaily:normalizeHotelDailyMetric(hotel.guestNightsDaily||{}),roomNightsDaily:normalizeHotelDailyMetric(hotel.roomNightsDaily||{}),revenueDaily:normalizeHotelDailyMetric(hotel.revenueDaily||{})
   };
 }
 function applyHotelConstants(hotel,constants){
@@ -4815,6 +4816,12 @@ function applyHotelConstants(hotel,constants){
   hotel.contracts=cloneContracts(constants.contracts||[]);
   hotel.selectedContractId=constants.selectedContractId||((hotel.contracts&&hotel.contracts[0])?hotel.contracts[0].id:null);
   hotel.nightsByMonth=normalizeHotelNights(constants.nightsByMonth||{});
+  hotel.roomNightsByMonth=normalizeHotelNights(constants.roomNightsByMonth||{});
+  hotel.roomNightsTargetsByMonth=normalizeHotelNights(constants.roomNightsTargetsByMonth||{});
+  hotel.revenueByMonth=normalizeHotelNights(constants.revenueByMonth||{});
+  hotel.guestNightsDaily=normalizeHotelDailyMetric(constants.guestNightsDaily||{});
+  hotel.roomNightsDaily=normalizeHotelDailyMetric(constants.roomNightsDaily||{});
+  hotel.revenueDaily=normalizeHotelDailyMetric(constants.revenueDaily||{});
 }
 function createWeeklyHotelFromConstants(constants){
   const subs=defaultSubsections();
@@ -4831,7 +4838,7 @@ function createWeeklyHotelFromConstants(constants){
     roomTypes:cloneRoomTypes(constants.roomTypes||[]),
     contracts:cloneContracts(constants.contracts||[]),
     selectedContractId:constants.selectedContractId||null,
-    nightsByMonth:normalizeHotelNights(constants.nightsByMonth||{}),roomNightsByMonth:normalizeHotelNights(constants.roomNightsByMonth||{}),roomNightsTargetsByMonth:normalizeHotelNights(constants.roomNightsTargetsByMonth||{}),
+    nightsByMonth:normalizeHotelNights(constants.nightsByMonth||{}),roomNightsByMonth:normalizeHotelNights(constants.roomNightsByMonth||{}),roomNightsTargetsByMonth:normalizeHotelNights(constants.roomNightsTargetsByMonth||{}),revenueByMonth:normalizeHotelNights(constants.revenueByMonth||{}),guestNightsDaily:normalizeHotelDailyMetric(constants.guestNightsDaily||{}),roomNightsDaily:normalizeHotelDailyMetric(constants.roomNightsDaily||{}),revenueDaily:normalizeHotelDailyMetric(constants.revenueDaily||{}),
     selectedSubsectionId:subs[0].id,
     subsections:subs,
     checklist:[],
@@ -5035,6 +5042,19 @@ function normalizeHotelNights(nights){
   }
   return result;
 }
+function normalizeHotelDailyMetric(values){
+  const result={};
+  if(!values||typeof values!=='object')return result;
+  const entries=Array.isArray(values)
+    ? values.map(item=>[item&&(item.date||item.key),item&&(item.value!==undefined?item.value:item.amount)])
+    : Object.entries(values);
+  entries.forEach(([key,value])=>{
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(String(key||'')))return;
+    const cleaned=String(value===undefined?'':value).replace(/\s/g,'').replace(',', '.').replace(/[^0-9.]/g,'');
+    if(cleaned!=='')result[key]=cleaned;
+  });
+  return result;
+}
 function ensureHotelNights(hotel){
   if(!hotel)return {};
   hotel.nightsByMonth=normalizeHotelNights(hotel.nightsByMonth||hotel.hotelNights||hotel.nights||{});
@@ -5057,24 +5077,52 @@ function ensureHotelRoomNightsTargets(hotel){
   delete hotel.roomNightsTargets;
   return hotel.roomNightsTargetsByMonth;
 }
-function hotelMonthlyMetricTotal(hotel,field,year){
-  let data={};
-  if(field==='roomNightsByMonth')data=ensureHotelRoomNights(hotel);
-  else if(field==='roomNightsTargetsByMonth')data=ensureHotelRoomNightsTargets(hotel);
-  else data=ensureHotelNights(hotel);
-  return Object.entries(data).reduce((sum,[key,val])=>{
-    if(year&&String(key).slice(0,4)!==String(year))return sum;
-    const n=parseFloat(String(val).replace(',','.'));
-    return sum+(Number.isFinite(n)?n:0);
-  },0);
+function ensureHotelNightsAnalytics(hotel){
+  if(!hotel)return;
+  ensureHotelNights(hotel);
+  ensureHotelRoomNights(hotel);
+  ensureHotelRoomNightsTargets(hotel);
+  hotel.revenueByMonth=normalizeHotelNights(hotel.revenueByMonth||hotel.revenuesByMonth||{});
+  hotel.guestNightsDaily=normalizeHotelDailyMetric(hotel.guestNightsDaily||{});
+  hotel.roomNightsDaily=normalizeHotelDailyMetric(hotel.roomNightsDaily||{});
+  hotel.revenueDaily=normalizeHotelDailyMetric(hotel.revenueDaily||{});
+  delete hotel.revenuesByMonth;
 }
-function hotelRoomNightsTotal(hotel,year){return hotelMonthlyMetricTotal(hotel,'roomNightsByMonth',year)}
-function hotelRoomNightsTargetsTotal(hotel,year){return hotelMonthlyMetricTotal(hotel,'roomNightsTargetsByMonth',year)}
-function hotelNightsTotal(hotel,year){
-  const data=ensureHotelNights(hotel);
+function hotelMetricMonthlyData(hotel,metric){
+  ensureHotelNightsAnalytics(hotel);
+  if(metric==='room')return hotel.roomNightsByMonth;
+  if(metric==='revenue')return hotel.revenueByMonth;
+  return hotel.nightsByMonth;
+}
+function hotelMetricDailyData(hotel,metric){
+  ensureHotelNightsAnalytics(hotel);
+  if(metric==='room')return hotel.roomNightsDaily;
+  if(metric==='revenue')return hotel.revenueDaily;
+  return hotel.guestNightsDaily;
+}
+function hotelMetricMonthValue(hotel,metric,year,month){
+  const prefix=`${year}-${String(month).padStart(2,'0')}-`;
+  const dailyValues=Object.entries(hotelMetricDailyData(hotel,metric))
+    .filter(([key])=>key.startsWith(prefix))
+    .map(([,value])=>Number(String(value).replace(',','.')))
+    .filter(Number.isFinite);
+  if(dailyValues.length)return Math.max(...dailyValues);
+  const fallback=Number(hotelMetricMonthlyData(hotel,metric)[`${year}-${String(month).padStart(2,'0')}`]);
+  return Number.isFinite(fallback)?fallback:0;
+}
+function hotelMetricYearTotal(hotel,metric,year){
+  let total=0;
+  for(let month=1;month<=12;month++)total+=hotelMetricMonthValue(hotel,metric,year,month);
+  return total;
+}
+function hotelNightsTotal(hotel,year){return hotelMetricYearTotal(hotel,'guest',Number(year)||hotelNightsYear)}
+function hotelRoomNightsTotal(hotel,year){return hotelMetricYearTotal(hotel,'room',Number(year)||hotelNightsYear)}
+function hotelRevenueTotal(hotel,year){return hotelMetricYearTotal(hotel,'revenue',Number(year)||hotelNightsYear)}
+function hotelRoomNightsTargetsTotal(hotel,year){
+  const data=ensureHotelRoomNightsTargets(hotel);
   return Object.entries(data).reduce((sum,[key,val])=>{
-    if(year&&String(key).slice(0,4)!==String(year))return sum;
-    const n=parseFloat(String(val).replace(',','.'));
+    if(String(key).slice(0,4)!==String(Number(year)||hotelNightsYear))return sum;
+    const n=Number(String(val).replace(',','.'));
     return sum+(Number.isFinite(n)?n:0);
   },0);
 }
@@ -5082,6 +5130,14 @@ function formatHotelNightsNumber(value){
   const n=parseFloat(String(value||0).replace(',','.'));
   if(!Number.isFinite(n))return '0';
   return (Math.round(n*100)/100).toLocaleString('bg-BG',{maximumFractionDigits:2});
+}
+function formatHotelRevenue(value){
+  const n=Number(String(value||0).replace(/\s/g,'').replace(',','.'));
+  return Number.isFinite(n)?Math.round(n).toLocaleString('bg-BG'):'0';
+}
+function formatHotelAdr(revenue,guestNights){
+  const guests=Number(guestNights)||0;
+  return guests>0?(Number(revenue||0)/guests).toLocaleString('bg-BG',{minimumFractionDigits:2,maximumFractionDigits:2}):'0,00';
 }
 function selectHotelNightsHotel(id){
   const w=getActiveWeek();
@@ -5093,21 +5149,76 @@ function selectHotelNightsHotel(id){
 }
 function changeHotelNightsYear(delta){
   hotelNightsYear+=delta;
+  hotelNightsDialog=null;
   renderHotels();
+}
+function syncHotelNightsAnalyticsAcrossWeeks(sourceWeek,hotelId){
+  if(!sourceWeek||!Array.isArray(sourceWeek.hotels))return;
+  const index=sourceWeek.hotels.findIndex(h=>h.id===hotelId);
+  if(index<0)return;
+  const source=sourceWeek.hotels[index];
+  ensureHotelNightsAnalytics(source);
+  const snapshot={
+    nightsByMonth:normalizeHotelNights(source.nightsByMonth),
+    roomNightsByMonth:normalizeHotelNights(source.roomNightsByMonth),
+    roomNightsTargetsByMonth:normalizeHotelNights(source.roomNightsTargetsByMonth),
+    revenueByMonth:normalizeHotelNights(source.revenueByMonth),
+    guestNightsDaily:normalizeHotelDailyMetric(source.guestNightsDaily),
+    roomNightsDaily:normalizeHotelDailyMetric(source.roomNightsDaily),
+    revenueDaily:normalizeHotelDailyMetric(source.revenueDaily)
+  };
+  const now=new Date().toISOString();
+  state.weeks.forEach(week=>{
+    const hotel=week&&Array.isArray(week.hotels)?week.hotels[index]:null;
+    if(!hotel||hotel===source)return;
+    hotel.nightsByMonth=normalizeHotelNights(snapshot.nightsByMonth);
+    hotel.roomNightsByMonth=normalizeHotelNights(snapshot.roomNightsByMonth);
+    hotel.roomNightsTargetsByMonth=normalizeHotelNights(snapshot.roomNightsTargetsByMonth);
+    hotel.revenueByMonth=normalizeHotelNights(snapshot.revenueByMonth);
+    hotel.guestNightsDaily=normalizeHotelDailyMetric(snapshot.guestNightsDaily);
+    hotel.roomNightsDaily=normalizeHotelDailyMetric(snapshot.roomNightsDaily);
+    hotel.revenueDaily=normalizeHotelDailyMetric(snapshot.revenueDaily);
+    week.updatedAt=now;
+  });
 }
 function updateHotelNightsValue(hotelId,year,month,value,metric){
   const w=getActiveWeek();
   if(!w)return;
   const hotel=w.hotels.find(h=>h.id===hotelId);
   if(!hotel)return;
-  const data=metric==='room'?ensureHotelRoomNights(hotel):(metric==='target'?ensureHotelRoomNightsTargets(hotel):ensureHotelNights(hotel));
+  const data=metric==='target'?ensureHotelRoomNightsTargets(hotel):hotelMetricMonthlyData(hotel,metric);
   const key=`${year}-${String(month).padStart(2,'0')}`;
-  const cleaned=String(value||'').replace(',', '.').replace(/[^0-9.]/g,'');
+  const cleaned=String(value||'').replace(/\s/g,'').replace(',', '.').replace(/[^0-9.]/g,'');
   if(cleaned==='')delete data[key];
   else data[key]=cleaned;
   touchWeek(w);
-  syncHotelConstantsAcrossWeeks(w);
+  syncHotelNightsAnalyticsAcrossWeeks(w,hotelId);
   updateHotelNightsTotalsUI(hotelId);
+  scheduleSilentStateSave();
+}
+function updateHotelDailyMetric(hotelId,date,value,metric){
+  const w=getActiveWeek();
+  if(!w)return;
+  const hotel=w.hotels.find(h=>h.id===hotelId);
+  if(!hotel)return;
+  const daily=hotelMetricDailyData(hotel,metric);
+  const cleaned=String(value||'').replace(/\s/g,'').replace(',', '.').replace(/[^0-9.]/g,'');
+  if(cleaned==='')delete daily[date];
+  else daily[date]=cleaned;
+  const year=Number(date.slice(0,4)),month=Number(date.slice(5,7));
+  const monthKey=date.slice(0,7);
+  const hasDaily=Object.keys(daily).some(key=>key.startsWith(monthKey+'-'));
+  if(hasDaily){
+    const monthValue=hotelMetricMonthValue(hotel,metric,year,month);
+    hotelMetricMonthlyData(hotel,metric)[monthKey]=String(monthValue);
+  }else{
+    delete hotelMetricMonthlyData(hotel,metric)[monthKey];
+  }
+  touchWeek(w);
+  syncHotelNightsAnalyticsAcrossWeeks(w,hotelId);
+  updateHotelNightsTotalsUI(hotelId);
+  updateHotelNightsMonthUI(hotel,year,month);
+  scheduleSilentStateSave();
 }
 function updateHotelNightsTotalsUI(hotelId){
   const w=getActiveWeek();
@@ -5126,6 +5237,74 @@ function updateHotelNightsTotalsUI(hotelId){
     const year=el.dataset.year;
     el.textContent=formatHotelNightsNumber(hotelRoomNightsTargetsTotal(hotel,year||undefined));
   });
+  document.querySelectorAll(`[data-hotel-revenue-total="${hotelId}"]`).forEach(el=>{
+    el.textContent=formatHotelRevenue(hotelRevenueTotal(hotel,el.dataset.year||hotelNightsYear));
+  });
+  document.querySelectorAll(`[data-hotel-adr-total="${hotelId}"]`).forEach(el=>{
+    const year=Number(el.dataset.year)||hotelNightsYear;
+    el.textContent=formatHotelAdr(hotelRevenueTotal(hotel,year),hotelNightsTotal(hotel,year));
+  });
+}
+function updateHotelNightsMonthUI(hotel,year,month){
+  ['guest','room','revenue'].forEach(metric=>{
+    const value=hotelMetricMonthValue(hotel,metric,year,month);
+    document.querySelectorAll(`[data-hotel-month-value="${metric}:${year}:${month}"]`).forEach(el=>{
+      el.textContent=metric==='revenue'?formatHotelRevenue(value):formatHotelNightsNumber(value);
+    });
+  });
+  const guest=hotelMetricMonthValue(hotel,'guest',year,month);
+  const revenue=hotelMetricMonthValue(hotel,'revenue',year,month);
+  document.querySelectorAll(`[data-hotel-month-adr="${year}:${month}"]`).forEach(el=>el.textContent=formatHotelAdr(revenue,guest));
+  const summary=document.querySelector('[data-hotel-nights-dialog-summary]');
+  if(summary&&hotelNightsDialog&&hotelNightsDialog.hotelId===hotel.id&&hotelNightsDialog.year===year&&hotelNightsDialog.month===month){
+    summary.innerHTML=`Гости: <strong>${formatHotelNightsNumber(guest)}</strong> · Стаи: <strong>${formatHotelNightsNumber(hotelMetricMonthValue(hotel,'room',year,month))}</strong> · Приходи: <strong>${formatHotelRevenue(revenue)}</strong> · ADR: <strong>${formatHotelAdr(revenue,guest)}</strong>`;
+  }
+}
+function hotelNightsMonthCard(hotel,metric,month,label){
+  const year=hotelNightsYear,previousYear=year-1;
+  const value=hotelMetricMonthValue(hotel,metric,year,month);
+  const previous=hotelMetricMonthValue(hotel,metric,previousYear,month);
+  const format=metric==='revenue'?formatHotelRevenue:formatHotelNightsNumber;
+  const adr=metric==='revenue'?`<div class="hotel-nights-month-adr">ADR ${year}: <strong data-hotel-month-adr="${year}:${month}">${formatHotelAdr(value,hotelMetricMonthValue(hotel,'guest',year,month))}</strong></div>`:'';
+  const target=metric==='room'?`<label class="hotel-nights-target-field" onclick="event.stopPropagation()"><span>Таргет ${year}</span><input type="number" min="0" step="1" inputmode="numeric" value="${escapeAttr(ensureHotelRoomNightsTargets(hotel)[`${year}-${String(month).padStart(2,'0')}`]||'')}" data-hotel-room-target-input="${escapeAttr(hotel.id)}" data-year="${year}" data-month="${month}" placeholder="0" /></label>`:'';
+  return `<div class="hotel-nights-month metric-card" role="button" tabindex="0" data-open-hotel-nights-month="${month}">
+    <label>${escapeHtml(label)}</label>
+    <div class="hotel-nights-year-value"><span>${year}</span><strong data-hotel-month-value="${metric}:${year}:${month}">${format(value)}</strong></div>
+    <div class="hotel-nights-year-value previous"><span>${previousYear}</span><strong data-hotel-month-value="${metric}:${previousYear}:${month}">${format(previous)}</strong></div>
+    ${target}${adr}
+  </div>`;
+}
+function renderHotelNightsDialog(hotel,year,month){
+  const days=new Date(year,month,0).getDate();
+  const rows=Array.from({length:days},(_,index)=>{
+    const day=index+1;
+    const date=`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const weekday=new Date(year,month-1,day).toLocaleDateString('bg-BG',{weekday:'short'});
+    return `<div class="hotel-nights-day-row">
+      <div class="hotel-nights-day-date"><strong>${day}</strong><span>${escapeHtml(weekday)}</span></div>
+      <input type="text" inputmode="numeric" value="${escapeAttr(hotel.guestNightsDaily[date]||'')}" data-hotel-daily-metric="guest" data-date="${date}" placeholder="0" />
+      <input type="text" inputmode="numeric" value="${escapeAttr(hotel.roomNightsDaily[date]||'')}" data-hotel-daily-metric="room" data-date="${date}" placeholder="0" />
+      <input class="revenue" type="text" inputmode="numeric" value="${escapeAttr(hotel.revenueDaily[date]?formatHotelRevenue(hotel.revenueDaily[date]):'')}" data-hotel-daily-metric="revenue" data-date="${date}" placeholder="0" />
+    </div>`;
+  }).join('');
+  return `<div class="hotel-nights-dialog-backdrop" data-close-hotel-nights-dialog>
+    <div class="hotel-nights-dialog" role="dialog" aria-modal="true" aria-label="${escapeAttr(monthNames[month-1]+' '+year)}" onclick="event.stopPropagation()">
+      <div class="hotel-nights-dialog-head"><div><strong>${escapeHtml(monthNames[month-1])} ${year}</strong><span>Въвеждай натрупаното към съответната дата. Използва се най-голямата стойност.</span></div><button type="button" class="icon-btn" data-close-hotel-nights-dialog aria-label="Затвори">×</button></div>
+      <div class="hotel-nights-dialog-summary" data-hotel-nights-dialog-summary></div>
+      <div class="hotel-nights-day-head"><span>Дата</span><span>Гости</span><span>Стаи</span><span>Приходи</span></div>
+      <div class="hotel-nights-day-list">${rows}</div>
+    </div>
+  </div>`;
+}
+function openHotelNightsMonth(hotelId,month){
+  hotelNightsDialog={hotelId,year:hotelNightsYear,month:Number(month)};
+  renderHotelNights();
+}
+function closeHotelNightsDialog(){
+  hotelNightsDialog=null;
+  const dialog=document.querySelector('.hotel-nights-dialog-backdrop');
+  if(dialog)dialog.remove();
+  flushScheduledSilentStateSave();
 }
 function renderHotelNights(){
   const w=getActiveWeek();
@@ -5137,35 +5316,23 @@ function renderHotelNights(){
   }
   let selected=getSelectedHotel(w)||w.hotels[0];
   if(!selected){wrap.innerHTML='<div class="empty">Няма избран хотел.</div>';return;}
-  ensureHotelNights(selected);
-  ensureHotelRoomNights(selected);
-  ensureHotelRoomNightsTargets(selected);
+  ensureHotelNightsAnalytics(selected);
   const tabs=w.hotels.map((hotel,index)=>{
-    ensureHotelNights(hotel);
-    ensureHotelRoomNights(hotel);
-    ensureHotelRoomNightsTargets(hotel);
+    ensureHotelNightsAnalytics(hotel);
     const name=(hotel.name&&hotel.name.trim())?hotel.name.trim():`Хотел ${index+1}`;
-    const guestTotal=formatHotelNightsNumber(hotelNightsTotal(hotel));
-    const roomTotal=formatHotelNightsNumber(hotelRoomNightsTotal(hotel));
+    const guestTotal=formatHotelNightsNumber(hotelNightsTotal(hotel,hotelNightsYear));
+    const roomTotal=formatHotelNightsNumber(hotelRoomNightsTotal(hotel,hotelNightsYear));
     return `<button class="hotel-nights-tab small${hotel.id===selected.id?' active':''}" type="button" data-select-hotel-nights="${escapeAttr(hotel.id)}"><span class="hotel-nights-tab-name">${escapeHtml(name)}</span><span class="hotel-nights-tab-total">Нощувки гости: <span data-hotel-nights-total="${escapeAttr(hotel.id)}">${guestTotal}</span></span><span class="hotel-nights-tab-total">Нощувки стаи: <span data-hotel-room-nights-total="${escapeAttr(hotel.id)}">${roomTotal}</span></span></button>`;
   }).join('');
-  const guestMonths=(monthNames||[]).map((m,i)=>{
-    const key=`${hotelNightsYear}-${String(i+1).padStart(2,'0')}`;
-    const value=ensureHotelNights(selected)[key]||'';
-    return `<div class="hotel-nights-month"><label>${escapeHtml(m)}</label><input type="number" min="0" step="1" inputmode="numeric" value="${escapeAttr(value)}" data-hotel-nights-input="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}" data-month="${i+1}" placeholder="0" /></div>`;
-  }).join('');
-  const roomMonths=(monthNames||[]).map((m,i)=>{
-    const key=`${hotelNightsYear}-${String(i+1).padStart(2,'0')}`;
-    const value=ensureHotelRoomNights(selected)[key]||'';
-    const target=ensureHotelRoomNightsTargets(selected)[key]||'';
-    return `<div class="hotel-nights-month two-fields"><label>${escapeHtml(m)}</label><div class="hotel-nights-subfield"><span>Стаи</span><input type="number" min="0" step="1" inputmode="numeric" value="${escapeAttr(value)}" data-hotel-room-nights-input="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}" data-month="${i+1}" placeholder="0" /></div><div class="hotel-nights-subfield"><span>Таргет</span><input type="number" min="0" step="1" inputmode="numeric" value="${escapeAttr(target)}" data-hotel-room-target-input="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}" data-month="${i+1}" placeholder="0" /></div></div>`;
-  }).join('');
+  const guestMonths=(monthNames||[]).map((m,i)=>hotelNightsMonthCard(selected,'guest',i+1,m)).join('');
+  const roomMonths=(monthNames||[]).map((m,i)=>hotelNightsMonthCard(selected,'room',i+1,m)).join('');
+  const revenueMonths=(monthNames||[]).map((m,i)=>hotelNightsMonthCard(selected,'revenue',i+1,m)).join('');
   const guestYearTotal=formatHotelNightsNumber(hotelNightsTotal(selected,hotelNightsYear));
-  const guestAllTotal=formatHotelNightsNumber(hotelNightsTotal(selected));
   const roomYearTotal=formatHotelNightsNumber(hotelRoomNightsTotal(selected,hotelNightsYear));
-  const roomAllTotal=formatHotelNightsNumber(hotelRoomNightsTotal(selected));
   const targetYearTotal=formatHotelNightsNumber(hotelRoomNightsTargetsTotal(selected,hotelNightsYear));
-  const targetAllTotal=formatHotelNightsNumber(hotelRoomNightsTargetsTotal(selected));
+  const revenueYearTotal=formatHotelRevenue(hotelRevenueTotal(selected,hotelNightsYear));
+  const adrYear=formatHotelAdr(hotelRevenueTotal(selected,hotelNightsYear),hotelNightsTotal(selected,hotelNightsYear));
+  const dialog=hotelNightsDialog&&hotelNightsDialog.hotelId===selected.id?renderHotelNightsDialog(selected,hotelNightsDialog.year,hotelNightsDialog.month):'';
   wrap.innerHTML=`
     <div class="hotel-nights-tabs">${tabs}</div>
     <div class="hotel-nights-yearbar">
@@ -5176,32 +5343,49 @@ function renderHotelNights(){
         <button class="small" type="button" data-nights-year-next>›</button>
       </div>
       <div class="hotel-nights-summary">
-        <span class="hotel-nights-pill">Гости година: <span data-hotel-nights-total="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}">${guestYearTotal}</span></span>
-        <span class="hotel-nights-pill">Гости общо: <span data-hotel-nights-total="${escapeAttr(selected.id)}">${guestAllTotal}</span></span>
-        <span class="hotel-nights-pill">Стаи година: <span data-hotel-room-nights-total="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}">${roomYearTotal}</span></span>
-        <span class="hotel-nights-pill">Стаи общо: <span data-hotel-room-nights-total="${escapeAttr(selected.id)}">${roomAllTotal}</span></span>
-        <span class="hotel-nights-pill">Таргет година: <span data-hotel-room-target-total="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}">${targetYearTotal}</span></span>
-        <span class="hotel-nights-pill">Таргет общо: <span data-hotel-room-target-total="${escapeAttr(selected.id)}">${targetAllTotal}</span></span>
+        <span class="hotel-nights-pill">Нощувки гости: <span data-hotel-nights-total="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}">${guestYearTotal}</span></span>
+        <span class="hotel-nights-pill">Нощувки стаи: <span data-hotel-room-nights-total="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}">${roomYearTotal}</span></span>
+        <span class="hotel-nights-pill">Таргет нощувки: <span data-hotel-room-target-total="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}">${targetYearTotal}</span></span>
+        <span class="hotel-nights-pill">Приходи: <span data-hotel-revenue-total="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}">${revenueYearTotal}</span></span>
+        <span class="hotel-nights-pill">ADR: <span data-hotel-adr-total="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}">${adrYear}</span></span>
       </div>
     </div>
     <div class="hotel-nights-table">
-      <div class="hotel-nights-table-head"><div><div class="hotel-nights-table-title">Нощувки гости</div><div class="hotel-nights-table-note">Старата таблица — само реализирани нощувки гости.</div></div></div>
+      <div class="hotel-nights-table-head"><div><div class="hotel-nights-table-title">Нощувки гости</div><div class="hotel-nights-table-note">Избраната година се сравнява с предходната. Натисни месец за дневно въвеждане.</div></div></div>
       <div class="hotel-nights-grid">${guestMonths}</div>
     </div>
     <div class="hotel-nights-table">
-      <div class="hotel-nights-table-head"><div><div class="hotel-nights-table-title">Нощувки стаи</div><div class="hotel-nights-table-note">Нова таблица — реализирани нощувки стаи + месечен таргет.</div></div></div>
+      <div class="hotel-nights-table-head"><div><div class="hotel-nights-table-title">Нощувки стаи</div><div class="hotel-nights-table-note">Реализирани нощувки по години и отделен таргет за избраната година.</div></div></div>
       <div class="hotel-nights-grid">${roomMonths}</div>
     </div>
-    <div class="hotel-nights-help">Тези стойности са само справка за избрания хотел. Таргетът се въвежда само към „Нощувки стаи“.</div>
+    <div class="hotel-nights-table">
+      <div class="hotel-nights-table-head"><div><div class="hotel-nights-table-title">Приходи и ADR</div><div class="hotel-nights-table-note">Приходът се показва с разделители за хиляди. ADR = приходи / нощувки гости.</div></div></div>
+      <div class="hotel-nights-grid">${revenueMonths}</div>
+    </div>
+    <div class="hotel-nights-help">За месечен резултат се използва най-голямата въведена натрупана стойност към дата, а не сборът на дневните записи.</div>
+    ${dialog}
   `;
   wrap.querySelectorAll('[data-select-hotel-nights]').forEach(btn=>btn.addEventListener('click',()=>selectHotelNightsHotel(btn.dataset.selectHotelNights)));
   const prev=wrap.querySelector('[data-nights-year-prev]');
   const next=wrap.querySelector('[data-nights-year-next]');
   if(prev)prev.addEventListener('click',()=>changeHotelNightsYear(-1));
   if(next)next.addEventListener('click',()=>changeHotelNightsYear(1));
-  wrap.querySelectorAll('[data-hotel-nights-input]').forEach(input=>input.addEventListener('input',e=>updateHotelNightsValue(e.target.dataset.hotelNightsInput,Number(e.target.dataset.year),Number(e.target.dataset.month),e.target.value,'guest')));
-  wrap.querySelectorAll('[data-hotel-room-nights-input]').forEach(input=>input.addEventListener('input',e=>updateHotelNightsValue(e.target.dataset.hotelRoomNightsInput,Number(e.target.dataset.year),Number(e.target.dataset.month),e.target.value,'room')));
-  wrap.querySelectorAll('[data-hotel-room-target-input]').forEach(input=>input.addEventListener('input',e=>updateHotelNightsValue(e.target.dataset.hotelRoomTargetInput,Number(e.target.dataset.year),Number(e.target.dataset.month),e.target.value,'target')));
+  wrap.querySelectorAll('[data-open-hotel-nights-month]').forEach(card=>{
+    card.addEventListener('click',()=>openHotelNightsMonth(selected.id,Number(card.dataset.openHotelNightsMonth)));
+    card.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openHotelNightsMonth(selected.id,Number(card.dataset.openHotelNightsMonth));}});
+  });
+  wrap.querySelectorAll('[data-hotel-room-target-input]').forEach(input=>{
+    input.addEventListener('click',event=>event.stopPropagation());
+    input.addEventListener('input',e=>updateHotelNightsValue(e.target.dataset.hotelRoomTargetInput,Number(e.target.dataset.year),Number(e.target.dataset.month),e.target.value,'target'));
+    input.addEventListener('blur',flushScheduledSilentStateSave);
+  });
+  wrap.querySelectorAll('[data-close-hotel-nights-dialog]').forEach(button=>button.addEventListener('click',closeHotelNightsDialog));
+  wrap.querySelectorAll('[data-hotel-daily-metric]').forEach(input=>{
+    input.addEventListener('focus',()=>{if(input.dataset.hotelDailyMetric==='revenue')input.value=input.value.replace(/\s/g,'');});
+    input.addEventListener('input',()=>updateHotelDailyMetric(selected.id,input.dataset.date,input.value,input.dataset.hotelDailyMetric));
+    input.addEventListener('blur',()=>{if(input.dataset.hotelDailyMetric==='revenue'&&input.value)input.value=formatHotelRevenue(input.value);flushScheduledSilentStateSave();});
+  });
+  if(hotelNightsDialog&&hotelNightsDialog.hotelId===selected.id)updateHotelNightsMonthUI(selected,hotelNightsDialog.year,hotelNightsDialog.month);
   applyAllSectionThemes();
 }
 
