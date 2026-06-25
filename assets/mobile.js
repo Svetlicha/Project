@@ -5240,7 +5240,11 @@ function updateHotelNightsTotalsUI(hotelId){
   document.querySelectorAll(`[data-hotel-revenue-total="${hotelId}"]`).forEach(el=>{
     el.textContent=formatHotelRevenue(hotelRevenueTotal(hotel,el.dataset.year||hotelNightsYear));
   });
-  document.querySelectorAll(`[data-hotel-adr-total="${hotelId}"]`).forEach(el=>{
+  document.querySelectorAll(`[data-hotel-person-adr-total="${hotelId}"]`).forEach(el=>{
+    const year=Number(el.dataset.year)||hotelNightsYear;
+    el.textContent=formatHotelAdr(hotelRevenueTotal(hotel,year),hotelNightsTotal(hotel,year));
+  });
+  document.querySelectorAll(`[data-hotel-room-adr-total="${hotelId}"]`).forEach(el=>{
     const year=Number(el.dataset.year)||hotelNightsYear;
     el.textContent=formatHotelAdr(hotelRevenueTotal(hotel,year),hotelRoomNightsTotal(hotel,year));
   });
@@ -5255,10 +5259,11 @@ function updateHotelNightsMonthUI(hotel,year,month){
   const guest=hotelMetricMonthValue(hotel,'guest',year,month);
   const revenue=hotelMetricMonthValue(hotel,'revenue',year,month);
   const rooms=hotelMetricMonthValue(hotel,'room',year,month);
-  document.querySelectorAll(`[data-hotel-month-adr="${year}:${month}"]`).forEach(el=>el.textContent=formatHotelAdr(revenue,rooms));
+  document.querySelectorAll(`[data-hotel-month-person-adr="${year}:${month}"]`).forEach(el=>el.textContent=formatHotelAdr(revenue,guest));
+  document.querySelectorAll(`[data-hotel-month-room-adr="${year}:${month}"]`).forEach(el=>el.textContent=formatHotelAdr(revenue,rooms));
   const summary=document.querySelector('[data-hotel-nights-dialog-summary]');
   if(summary&&hotelNightsDialog&&hotelNightsDialog.hotelId===hotel.id&&hotelNightsDialog.year===year&&hotelNightsDialog.month===month){
-    summary.innerHTML=`Гости: <strong>${formatHotelNightsNumber(guest)}</strong> · Стаи: <strong>${formatHotelNightsNumber(rooms)}</strong> · Приходи: <strong>${formatHotelRevenue(revenue)}</strong> · ADR: <strong>${formatHotelAdr(revenue,rooms)}</strong>`;
+    summary.innerHTML=`Гости: <strong>${formatHotelNightsNumber(guest)}</strong> · Стаи: <strong>${formatHotelNightsNumber(rooms)}</strong> · Приходи: <strong>${formatHotelRevenue(revenue)}</strong> · ADR човек: <strong>${formatHotelAdr(revenue,guest)}</strong> · ADR стая: <strong>${formatHotelAdr(revenue,rooms)}</strong>`;
   }
 }
 function hotelNightsMonthCard(hotel,month,label){
@@ -5279,7 +5284,8 @@ function hotelNightsMonthCard(hotel,month,label){
     <div class="hotel-nights-comparison-row"><span>Нощувки стаи</span><strong data-hotel-month-value="room:${year}:${month}">${formatHotelNightsNumber(room)}</strong><strong data-hotel-month-value="room:${previousYear}:${month}">${formatHotelNightsNumber(roomPrevious)}</strong></div>
     <div class="hotel-nights-comparison-row target"><span>Таргет нощувки</span><input onclick="event.stopPropagation()" type="number" min="0" step="1" inputmode="numeric" value="${escapeAttr(targets[targetKey]||'')}" data-hotel-room-target-input="${escapeAttr(hotel.id)}" data-year="${year}" data-month="${month}" placeholder="0" /><strong>${formatHotelNightsNumber(targets[previousTargetKey]||0)}</strong></div>
     <div class="hotel-nights-comparison-row"><span>Приходи</span><strong data-hotel-month-value="revenue:${year}:${month}">${formatHotelRevenue(revenue)}</strong><strong data-hotel-month-value="revenue:${previousYear}:${month}">${formatHotelRevenue(revenuePrevious)}</strong></div>
-    <div class="hotel-nights-comparison-row adr"><span>ADR</span><strong data-hotel-month-adr="${year}:${month}">${formatHotelAdr(revenue,room)}</strong><strong data-hotel-month-adr="${previousYear}:${month}">${formatHotelAdr(revenuePrevious,roomPrevious)}</strong></div>
+    <div class="hotel-nights-comparison-row adr"><span>ADR на човек</span><strong data-hotel-month-person-adr="${year}:${month}">${formatHotelAdr(revenue,guest)}</strong><strong data-hotel-month-person-adr="${previousYear}:${month}">${formatHotelAdr(revenuePrevious,guestPrevious)}</strong></div>
+    <div class="hotel-nights-comparison-row adr"><span>ADR на стая</span><strong data-hotel-month-room-adr="${year}:${month}">${formatHotelAdr(revenue,room)}</strong><strong data-hotel-month-room-adr="${previousYear}:${month}">${formatHotelAdr(revenuePrevious,roomPrevious)}</strong></div>
   </div>`;
 }
 function renderHotelNightsDialog(hotel,year,month){
@@ -5337,7 +5343,8 @@ function renderHotelNights(){
   const roomYearTotal=formatHotelNightsNumber(hotelRoomNightsTotal(selected,hotelNightsYear));
   const targetYearTotal=formatHotelNightsNumber(hotelRoomNightsTargetsTotal(selected,hotelNightsYear));
   const revenueYearTotal=formatHotelRevenue(hotelRevenueTotal(selected,hotelNightsYear));
-  const adrYear=formatHotelAdr(hotelRevenueTotal(selected,hotelNightsYear),hotelRoomNightsTotal(selected,hotelNightsYear));
+  const personAdrYear=formatHotelAdr(hotelRevenueTotal(selected,hotelNightsYear),hotelNightsTotal(selected,hotelNightsYear));
+  const roomAdrYear=formatHotelAdr(hotelRevenueTotal(selected,hotelNightsYear),hotelRoomNightsTotal(selected,hotelNightsYear));
   const dialog=hotelNightsDialog&&hotelNightsDialog.hotelId===selected.id?renderHotelNightsDialog(selected,hotelNightsDialog.year,hotelNightsDialog.month):'';
   wrap.innerHTML=`
     <div class="hotel-nights-tabs">${tabs}</div>
@@ -5353,7 +5360,8 @@ function renderHotelNights(){
         <span class="hotel-nights-pill">Нощувки стаи: <span data-hotel-room-nights-total="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}">${roomYearTotal}</span></span>
         <span class="hotel-nights-pill">Таргет нощувки: <span data-hotel-room-target-total="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}">${targetYearTotal}</span></span>
         <span class="hotel-nights-pill">Приходи: <span data-hotel-revenue-total="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}">${revenueYearTotal}</span></span>
-        <span class="hotel-nights-pill">ADR: <span data-hotel-adr-total="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}">${adrYear}</span></span>
+        <span class="hotel-nights-pill">ADR на човек: <span data-hotel-person-adr-total="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}">${personAdrYear}</span></span>
+        <span class="hotel-nights-pill">ADR на стая: <span data-hotel-room-adr-total="${escapeAttr(selected.id)}" data-year="${hotelNightsYear}">${roomAdrYear}</span></span>
       </div>
     </div>
     <div class="hotel-nights-table">
