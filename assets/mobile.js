@@ -5135,9 +5135,9 @@ function formatHotelRevenue(value){
   const n=Number(String(value||0).replace(/\s/g,'').replace(',','.'));
   return Number.isFinite(n)?Math.round(n).toLocaleString('bg-BG'):'0';
 }
-function formatHotelAdr(revenue,guestNights){
-  const guests=Number(guestNights)||0;
-  return guests>0?(Number(revenue||0)/guests).toLocaleString('bg-BG',{minimumFractionDigits:2,maximumFractionDigits:2}):'0,00';
+function formatHotelAdr(revenue,roomNights){
+  const rooms=Number(roomNights)||0;
+  return rooms>0?(Number(revenue||0)/rooms).toLocaleString('bg-BG',{minimumFractionDigits:2,maximumFractionDigits:2}):'0,00';
 }
 function selectHotelNightsHotel(id){
   const w=getActiveWeek();
@@ -5242,7 +5242,7 @@ function updateHotelNightsTotalsUI(hotelId){
   });
   document.querySelectorAll(`[data-hotel-adr-total="${hotelId}"]`).forEach(el=>{
     const year=Number(el.dataset.year)||hotelNightsYear;
-    el.textContent=formatHotelAdr(hotelRevenueTotal(hotel,year),hotelNightsTotal(hotel,year));
+    el.textContent=formatHotelAdr(hotelRevenueTotal(hotel,year),hotelRoomNightsTotal(hotel,year));
   });
 }
 function updateHotelNightsMonthUI(hotel,year,month){
@@ -5254,10 +5254,11 @@ function updateHotelNightsMonthUI(hotel,year,month){
   });
   const guest=hotelMetricMonthValue(hotel,'guest',year,month);
   const revenue=hotelMetricMonthValue(hotel,'revenue',year,month);
-  document.querySelectorAll(`[data-hotel-month-adr="${year}:${month}"]`).forEach(el=>el.textContent=formatHotelAdr(revenue,guest));
+  const rooms=hotelMetricMonthValue(hotel,'room',year,month);
+  document.querySelectorAll(`[data-hotel-month-adr="${year}:${month}"]`).forEach(el=>el.textContent=formatHotelAdr(revenue,rooms));
   const summary=document.querySelector('[data-hotel-nights-dialog-summary]');
   if(summary&&hotelNightsDialog&&hotelNightsDialog.hotelId===hotel.id&&hotelNightsDialog.year===year&&hotelNightsDialog.month===month){
-    summary.innerHTML=`Гости: <strong>${formatHotelNightsNumber(guest)}</strong> · Стаи: <strong>${formatHotelNightsNumber(hotelMetricMonthValue(hotel,'room',year,month))}</strong> · Приходи: <strong>${formatHotelRevenue(revenue)}</strong> · ADR: <strong>${formatHotelAdr(revenue,guest)}</strong>`;
+    summary.innerHTML=`Гости: <strong>${formatHotelNightsNumber(guest)}</strong> · Стаи: <strong>${formatHotelNightsNumber(rooms)}</strong> · Приходи: <strong>${formatHotelRevenue(revenue)}</strong> · ADR: <strong>${formatHotelAdr(revenue,rooms)}</strong>`;
   }
 }
 function hotelNightsMonthCard(hotel,month,label){
@@ -5278,7 +5279,7 @@ function hotelNightsMonthCard(hotel,month,label){
     <div class="hotel-nights-comparison-row"><span>Нощувки стаи</span><strong data-hotel-month-value="room:${year}:${month}">${formatHotelNightsNumber(room)}</strong><strong data-hotel-month-value="room:${previousYear}:${month}">${formatHotelNightsNumber(roomPrevious)}</strong></div>
     <div class="hotel-nights-comparison-row target"><span>Таргет нощувки</span><input onclick="event.stopPropagation()" type="number" min="0" step="1" inputmode="numeric" value="${escapeAttr(targets[targetKey]||'')}" data-hotel-room-target-input="${escapeAttr(hotel.id)}" data-year="${year}" data-month="${month}" placeholder="0" /><strong>${formatHotelNightsNumber(targets[previousTargetKey]||0)}</strong></div>
     <div class="hotel-nights-comparison-row"><span>Приходи</span><strong data-hotel-month-value="revenue:${year}:${month}">${formatHotelRevenue(revenue)}</strong><strong data-hotel-month-value="revenue:${previousYear}:${month}">${formatHotelRevenue(revenuePrevious)}</strong></div>
-    <div class="hotel-nights-comparison-row adr"><span>ADR</span><strong data-hotel-month-adr="${year}:${month}">${formatHotelAdr(revenue,guest)}</strong><strong data-hotel-month-adr="${previousYear}:${month}">${formatHotelAdr(revenuePrevious,guestPrevious)}</strong></div>
+    <div class="hotel-nights-comparison-row adr"><span>ADR</span><strong data-hotel-month-adr="${year}:${month}">${formatHotelAdr(revenue,room)}</strong><strong data-hotel-month-adr="${previousYear}:${month}">${formatHotelAdr(revenuePrevious,roomPrevious)}</strong></div>
   </div>`;
 }
 function renderHotelNightsDialog(hotel,year,month){
@@ -5336,7 +5337,7 @@ function renderHotelNights(){
   const roomYearTotal=formatHotelNightsNumber(hotelRoomNightsTotal(selected,hotelNightsYear));
   const targetYearTotal=formatHotelNightsNumber(hotelRoomNightsTargetsTotal(selected,hotelNightsYear));
   const revenueYearTotal=formatHotelRevenue(hotelRevenueTotal(selected,hotelNightsYear));
-  const adrYear=formatHotelAdr(hotelRevenueTotal(selected,hotelNightsYear),hotelNightsTotal(selected,hotelNightsYear));
+  const adrYear=formatHotelAdr(hotelRevenueTotal(selected,hotelNightsYear),hotelRoomNightsTotal(selected,hotelNightsYear));
   const dialog=hotelNightsDialog&&hotelNightsDialog.hotelId===selected.id?renderHotelNightsDialog(selected,hotelNightsDialog.year,hotelNightsDialog.month):'';
   wrap.innerHTML=`
     <div class="hotel-nights-tabs">${tabs}</div>
