@@ -5112,7 +5112,7 @@ function hotelMetricMonthValue(hotel,metric,year,month){
 }
 function hotelMetricYearTotal(hotel,metric,year){
   let total=0;
-  for(let month=1;month<=12;month++)total+=hotelMetricMonthValue(hotel,metric,year,month);
+  for(let month=5;month<=10;month++)total+=hotelMetricMonthValue(hotel,metric,year,month);
   return total;
 }
 function hotelNightsTotal(hotel,year){return hotelMetricYearTotal(hotel,'guest',Number(year)||hotelNightsYear)}
@@ -5331,7 +5331,7 @@ function renderHotelNights(){
     const roomTotal=formatHotelNightsNumber(hotelRoomNightsTotal(hotel,hotelNightsYear));
     return `<button class="hotel-nights-tab small${hotel.id===selected.id?' active':''}" type="button" data-select-hotel-nights="${escapeAttr(hotel.id)}"><span class="hotel-nights-tab-name">${escapeHtml(name)}</span><span class="hotel-nights-tab-total">Нощувки гости: <span data-hotel-nights-total="${escapeAttr(hotel.id)}">${guestTotal}</span></span><span class="hotel-nights-tab-total">Нощувки стаи: <span data-hotel-room-nights-total="${escapeAttr(hotel.id)}">${roomTotal}</span></span></button>`;
   }).join('');
-  const monthCards=(monthNames||[]).map((m,i)=>hotelNightsMonthCard(selected,i+1,m)).join('');
+  const monthCards=(monthNames||[]).slice(4,10).map((m,i)=>hotelNightsMonthCard(selected,i+5,m)).join('');
   const guestYearTotal=formatHotelNightsNumber(hotelNightsTotal(selected,hotelNightsYear));
   const roomYearTotal=formatHotelNightsNumber(hotelRoomNightsTotal(selected,hotelNightsYear));
   const targetYearTotal=formatHotelNightsNumber(hotelRoomNightsTargetsTotal(selected,hotelNightsYear));
