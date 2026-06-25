@@ -5110,9 +5110,12 @@ function hotelMetricMonthValue(hotel,metric,year,month){
   const fallback=Number(hotelMetricMonthlyData(hotel,metric)[`${year}-${String(month).padStart(2,'0')}`]);
   return Number.isFinite(fallback)?fallback:0;
 }
+function hotelSeasonMonths(year){
+  return Number(year)===2025?[4,5,6,7,8,9,10]:[5,6,7,8,9,10];
+}
 function hotelMetricYearTotal(hotel,metric,year){
   let total=0;
-  for(let month=5;month<=10;month++)total+=hotelMetricMonthValue(hotel,metric,year,month);
+  hotelSeasonMonths(year).forEach(month=>{total+=hotelMetricMonthValue(hotel,metric,year,month);});
   return total;
 }
 function hotelNightsTotal(hotel,year){return hotelMetricYearTotal(hotel,'guest',Number(year)||hotelNightsYear)}
@@ -5120,8 +5123,10 @@ function hotelRoomNightsTotal(hotel,year){return hotelMetricYearTotal(hotel,'roo
 function hotelRevenueTotal(hotel,year){return hotelMetricYearTotal(hotel,'revenue',Number(year)||hotelNightsYear)}
 function hotelRoomNightsTargetsTotal(hotel,year){
   const data=ensureHotelRoomNightsTargets(hotel);
+  const selectedYear=Number(year)||hotelNightsYear;
+  const months=hotelSeasonMonths(selectedYear);
   return Object.entries(data).reduce((sum,[key,val])=>{
-    if(String(key).slice(0,4)!==String(Number(year)||hotelNightsYear))return sum;
+    if(String(key).slice(0,4)!==String(selectedYear)||!months.includes(Number(String(key).slice(5,7))))return sum;
     const n=Number(String(val).replace(',','.'));
     return sum+(Number.isFinite(n)?n:0);
   },0);
@@ -5338,7 +5343,7 @@ function renderHotelNights(){
     const roomTotal=formatHotelNightsNumber(hotelRoomNightsTotal(hotel,hotelNightsYear));
     return `<button class="hotel-nights-tab small${hotel.id===selected.id?' active':''}" type="button" data-select-hotel-nights="${escapeAttr(hotel.id)}"><span class="hotel-nights-tab-name">${escapeHtml(name)}</span><span class="hotel-nights-tab-total">Нощувки гости: <span data-hotel-nights-total="${escapeAttr(hotel.id)}">${guestTotal}</span></span><span class="hotel-nights-tab-total">Нощувки стаи: <span data-hotel-room-nights-total="${escapeAttr(hotel.id)}">${roomTotal}</span></span></button>`;
   }).join('');
-  const monthCards=(monthNames||[]).slice(4,10).map((m,i)=>hotelNightsMonthCard(selected,i+5,m)).join('');
+  const monthCards=hotelSeasonMonths(hotelNightsYear).map(month=>hotelNightsMonthCard(selected,month,monthNames[month-1])).join('');
   const guestYearTotal=formatHotelNightsNumber(hotelNightsTotal(selected,hotelNightsYear));
   const roomYearTotal=formatHotelNightsNumber(hotelRoomNightsTotal(selected,hotelNightsYear));
   const targetYearTotal=formatHotelNightsNumber(hotelRoomNightsTargetsTotal(selected,hotelNightsYear));
