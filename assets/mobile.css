@@ -5743,6 +5743,13 @@
     overflow:hidden;
   }
 
+  .mobile-redesign-v1 #contractsSection,
+  .mobile-redesign-v1 #checklistSection,
+  .mobile-redesign-v1 #cancellationsSection,
+  .mobile-redesign-v1 #discountReservationsSection{
+    display:none!important;
+  }
+
   .mobile-redesign-v1 .section-title{
     display:grid!important;
     grid-template-columns:minmax(0,1fr) auto!important;
@@ -5983,6 +5990,57 @@
     display:none!important;
   }
 
+  .mobile-redesign-v1 .mobile-weeks-guard-toggle{
+    position:relative;
+    width:100%!important;
+    min-height:46px!important;
+    margin:0!important;
+    padding:11px 38px 11px 12px!important;
+    border-radius:14px!important;
+    border:1px solid #bdd3ea!important;
+    background:#eef7ff!important;
+    color:#113b62!important;
+    font-size:14px!important;
+    font-weight:900!important;
+    text-align:left!important;
+    justify-content:flex-start!important;
+    box-shadow:none!important;
+  }
+
+  .mobile-redesign-v1 .mobile-weeks-guard-toggle::after{
+    content:"";
+    position:absolute;
+    right:14px;
+    top:50%;
+    width:9px;
+    height:9px;
+    border-right:2px solid currentColor;
+    border-bottom:2px solid currentColor;
+    transform:translateY(-65%) rotate(45deg);
+    transition:transform .16s ease;
+  }
+
+  .mobile-redesign-v1 .mobile-weeks-guard-toggle.active::after{
+    transform:translateY(-35%) rotate(225deg);
+  }
+
+  .mobile-redesign-v1 .mobile-weeks-guard-note{
+    margin:7px 2px 10px!important;
+    color:#64748b!important;
+    font-size:11px!important;
+    font-weight:750!important;
+    line-height:1.35!important;
+  }
+
+  .mobile-redesign-v1 .mobile-weeks-guard-panel{
+    display:grid;
+    gap:10px;
+  }
+
+  .mobile-redesign-v1 .mobile-weeks-guard-panel.hidden{
+    display:none!important;
+  }
+
   .mobile-redesign-v1 .week-list{
     max-height:42vh;
     overflow:auto;
@@ -6115,6 +6173,7 @@
   .mobile-redesign-v1 .mobile-bottom-nav button[data-mobile-target="weeks"]::before{content:"◷"}
   .mobile-redesign-v1 .mobile-bottom-nav button[data-mobile-target="discounts"]::before{content:"%"}
   .mobile-redesign-v1 .mobile-bottom-nav button[data-mobile-target="discountReservations"]::before{content:"#"}
+  .mobile-redesign-v1 .mobile-bottom-nav button[data-mobile-target="form"]::before{content:"▤"}
   .mobile-redesign-v1 .mobile-bottom-nav button[data-mobile-target="tasks"]::before{content:"✓"}
   .mobile-redesign-v1 .mobile-bottom-nav button[data-mobile-target="more"]::before{content:"⋯"}
 
