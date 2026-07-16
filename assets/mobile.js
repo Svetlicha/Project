@@ -1,5 +1,6 @@
 /* ---- mobile script block 1 from v202 ---- */
 (function setupRobustMobileBottomNavV165(){
+  const hiddenMobileSections=new Set(['contracts','checklist','cancellations','discountReservations']);
   const sectionTargetIds={
     hotels:'hotelsSection',contracts:'contractsSection',tasks:'tasksSection',roomTypes:'roomTypesSection',prices:'pricesSection',ultra:'ultraSection',discounts:'discountsSection',discountReservations:'discountReservationsSection',form:'workFormSection',email:'emailSection',emailTxt:'emailTxtSection',checklist:'checklistSection',cancellations:'cancellationsSection'
   };
@@ -39,6 +40,7 @@
   }
   function openTarget(target){
     if(!target)return;
+    if(hiddenMobileSections.has(target))return;
     if(target==='weeks'){
       document.body.classList.remove('mobile-more-open');
       document.body.classList.toggle('mobile-sidebar-open');
@@ -9899,7 +9901,52 @@ function escapeAttr(value){return escapeHtml(value).replace(/`/g,'&#096;')}
 })();
 
 
+(function setupMobileWeeksGuardV203(){
+  function init(){
+    const sidebar=document.querySelector('.sidebar');
+    if(!sidebar||sidebar.dataset.weeksGuardReady==='1')return;
+    sidebar.dataset.weeksGuardReady='1';
+
+    const panel=document.createElement('div');
+    panel.className='mobile-weeks-guard-panel hidden';
+    while(sidebar.firstChild)panel.appendChild(sidebar.firstChild);
+
+    const toggle=document.createElement('button');
+    toggle.type='button';
+    toggle.className='mobile-weeks-guard-toggle';
+    toggle.setAttribute('aria-expanded','false');
+    toggle.textContent='Отвори седмици и архив';
+
+    const note=document.createElement('div');
+    note.className='mobile-weeks-guard-note';
+    note.textContent='Тук са копиране, импорт/експорт, Google backups и избор на седмица.';
+
+    function setExpanded(value){
+      const expanded=!!value;
+      panel.classList.toggle('hidden',!expanded);
+      toggle.classList.toggle('active',expanded);
+      toggle.setAttribute('aria-expanded',expanded?'true':'false');
+      toggle.textContent=expanded?'Скрий седмици и архив':'Отвори седмици и архив';
+    }
+
+    toggle.addEventListener('click',()=>setExpanded(panel.classList.contains('hidden')));
+    sidebar.appendChild(toggle);
+    sidebar.appendChild(note);
+    sidebar.appendChild(panel);
+    setExpanded(false);
+
+    window.hotelMobileResetWeeksGuard=function(){setExpanded(false)};
+    const observer=new MutationObserver(()=>{
+      if(!document.body.classList.contains('mobile-sidebar-open'))setExpanded(false);
+    });
+    observer.observe(document.body,{attributes:true,attributeFilter:['class']});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+
+
 (function setupMobileAppShellV160(){
+  const hiddenMobileSections=new Set(['contracts','checklist','cancellations','discountReservations']);
   const sectionTargetIds={
     hotels:'hotelsSection',contracts:'contractsSection',tasks:'tasksSection',roomTypes:'roomTypesSection',prices:'pricesSection',ultra:'ultraSection',discounts:'discountsSection',discountReservations:'discountReservationsSection',form:'workFormSection',email:'emailTableSection',emailTxt:'emailTxtSection',checklist:'checklistSection',cancellations:'cancellationsSection'
   };
@@ -9909,6 +9956,7 @@ function escapeAttr(value){return escapeHtml(value).replace(/`/g,'&#096;')}
     document.querySelectorAll('#mobileBottomNav button').forEach(btn=>btn.classList.toggle('active',btn.dataset.mobileTarget===target));
   }
   function openSectionMobile(section){
+    if(hiddenMobileSections.has(section))return;
     if(section==='nights'){
       closeMobileSheets();
       try{setSectionOpen('hotels',true);hotelNightsOpen=true;renderHotels();}catch(err){console.warn(err);}
