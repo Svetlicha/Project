@@ -45,6 +45,12 @@
       setActive('weeks');
       return;
     }
+    if(target==='more'){
+      document.body.classList.remove('mobile-sidebar-open');
+      document.body.classList.toggle('mobile-more-open');
+      setActive('more');
+      return;
+    }
     if(target==='nights'){
       closeSheets();
       try{setSectionOpen('hotels',true);hotelNightsOpen=true;renderHotels();}catch(err){directOpen('hotels');}
@@ -513,7 +519,7 @@ const SECTION_THEME_SECTIONS=[
 const QUICK_ACCESS_DEFAULT_ORDER=['roomTypes','nights','mapping','prices','ultra','discounts','discountReservations','form','email','contracts','tasks','cancellations'];
 const QUICK_ACCESS_ORDER_KEY='hotel_discount_history_quick_access_order_v202';
 
-const DISCOUNT_RESERVATION_LAYOUT_VERSION=7;
+const DISCOUNT_RESERVATION_LAYOUT_VERSION=8;
 const DISCOUNT_RESERVATION_LAYOUT_LEGACY_DEFAULT=[
   {key:'number',label:'Номер',span:5,row:1},
   {key:'reservationDate',label:'Дата създаване',span:5,row:1},
@@ -583,7 +589,8 @@ const DISCOUNT_RESERVATION_LAYOUT_DEFAULT=[
   {key:'roomType',label:'Тип стая',span:5,row:1},
   {key:'price',label:'Цена',span:5,row:1},
   {key:'discount',label:'Отстъпка',span:3,row:1},
-  {key:'clockNumber',label:'Clock',span:60,row:2},
+  {key:'clockNumber',label:'Clock',span:30,row:2},
+  {key:'quendooNumber',label:'Quendoo',span:30,row:2},
   {key:'comment',label:'Коментар',span:36,row:3}
 ];
 let discountReservationLayoutOpen=false;
@@ -1424,7 +1431,7 @@ function sanitizeDiscountReservationCustomLabel(value){
 }
 function normalizeDiscountReservationLayoutField(item,def){
   const source=item&&typeof item==='object'?item:{};
-  const isClock=def&&def.key==='clockNumber';
+  const isClock=def&&(def.key==='clockNumber'||def.key==='quendooNumber');
   const isComment=def&&def.key==='comment';
   const forcedRow=isClock?2:(isComment?3:null);
   return {
@@ -1736,6 +1743,7 @@ function renderDiscountReservationField(item,fieldOrKey,index,hotelOptions,night
       ${inputs}
     </div>`;
   }
+  if(key==='quendooNumber')return `<input class="discount-reservation-quendoo" ${common} type="text" inputmode="numeric" maxlength="20" placeholder="Quendoo" value="${escapeAttr(item.quendooNumber||'')}" tabindex="${tab}" data-discount-reservation-field="quendooNumber"${editAttr} />`;
   if(key==='hotel')return `<select class="discount-reservation-hotel" ${common} tabindex="${tab}" data-discount-reservation-field="hotel"${editAttr}>${hotelOptions}</select>`;
   if(key==='guestName')return `<input class="discount-reservation-guest" ${common} type="text" placeholder="Имена на госта" value="${escapeAttr(item.guestName||'')}" tabindex="${tab}" data-discount-reservation-field="guestName"${editAttr} />`;
   if(key==='stay'){
@@ -3662,30 +3670,62 @@ function normalizeDiscountReservationDateISO(value){
   if(/^\d{4}-\d{2}-\d{2}$/.test(raw))return raw;
   return displayToISO(raw,new Date().getFullYear())||'';
 }
-function normalizeDiscountReservationClockNumbers(item){
+function sanitizeDiscountReservationClockNumber(value){
+  return String(value===undefined||value===null?'':value).replace(/\D/g,'').slice(0,6);
+}
+function compactDiscountReservationClockNumbers(values){
+  const cleaned=[];
+  (Array.isArray(values)?values:[]).forEach(value=>{
+    const raw=sanitizeDiscountReservationClockNumber(value);
+    if(raw&&!cleaned.includes(raw))cleaned.push(raw);
+  });
+  return cleaned.filter(value=>{
+    const hasLonger=cleaned.some(other=>other!==value&&other.startsWith(value));
+    if(!hasLonger)return true;
+    if(value.length<5)return false;
+    const hasShorterPrefix=cleaned.some(other=>other!==value&&value.startsWith(other)&&other.length<value.length);
+    return !hasShorterPrefix;
+  });
+}
+function discountReservationRawClockValues(item){
   const values=[];
-  const add=value=>{
-    const raw=String(value===undefined||value===null?'':value).replace(/\D/g,'').slice(0,6);
-    if(raw)values.push(raw);
-  };
-  if(item&&Array.isArray(item.clockNumbers))item.clockNumbers.forEach(add);
-  if(item&&Array.isArray(item.clockNumberList))item.clockNumberList.forEach(add);
-  if(item&&Array.isArray(item.clockNumbersList))item.clockNumbersList.forEach(add);
+  let hasArraySource=false;
+  const add=value=>values.push(sanitizeDiscountReservationClockNumber(value));
+  if(item&&Array.isArray(item.clockNumbers)){
+    hasArraySource=true;
+    item.clockNumbers.forEach(add);
+  }
+  if(item&&Array.isArray(item.clockNumberList)){
+    hasArraySource=true;
+    item.clockNumberList.forEach(add);
+  }
+  if(item&&Array.isArray(item.clockNumbersList)){
+    hasArraySource=true;
+    item.clockNumbersList.forEach(add);
+  }
   const legacy=item&&(item.clockNumber||item.clockReservationNumber||item.reservationNumber||item.clockNo||item.clockId);
-  if(legacy!==undefined&&legacy!==null){
+  if(!hasArraySource&&legacy!==undefined&&legacy!==null){
     String(legacy).split(/[,\s;|]+/).forEach(add);
   }
-  return [...new Set(values)];
+  return values;
+}
+function normalizeDiscountReservationClockNumbers(item){
+  return compactDiscountReservationClockNumbers(discountReservationRawClockValues(item));
 }
 function syncDiscountReservationClockNumber(item){
   if(!item)return;
-  const clocks=normalizeDiscountReservationClockNumbers(item);
+  const source=Array.isArray(item.clockNumbers)?item.clockNumbers:discountReservationRawClockValues(item);
+  const clocks=compactDiscountReservationClockNumbers(source);
   item.clockNumbers=clocks;
   item.clockNumber=clocks.join(', ');
 }
 function discountReservationClockEditorValues(item){
-  if(item&&Array.isArray(item.clockNumbers)&&item.clockNumbers.length){
-    return item.clockNumbers.map(value=>String(value===undefined||value===null?'':value).replace(/\D/g,'').slice(0,6));
+  const raw=discountReservationRawClockValues(item);
+  if(raw.length){
+    const clocks=compactDiscountReservationClockNumbers(raw);
+    const emptyCount=item&&item.isEditing?raw.filter(value=>!value).length:0;
+    for(let i=0;i<emptyCount;i+=1)clocks.push('');
+    return clocks;
   }
   return normalizeDiscountReservationClockNumbers(item);
 }
@@ -3702,17 +3742,21 @@ function normalizeDiscountReservations(items){
     const createdAt=item&&item.createdAt?String(item.createdAt):new Date(Date.now()-index).toISOString();
     const rawAutoNumber=item&&(item.autoNumber!==undefined||item.number!==undefined||item.no!==undefined)?Number(item.autoNumber!==undefined?item.autoNumber:(item.number!==undefined?item.number:item.no)):NaN;
     const rawClockNumbers=item&&Array.isArray(item.clockNumbers)
-      ? item.clockNumbers.map(value=>String(value===undefined||value===null?'':value).replace(/\D/g,'').slice(0,6))
+      ? item.clockNumbers.map(value=>sanitizeDiscountReservationClockNumber(value))
       : null;
     const clockNumbers=rawClockNumbers&&rawClockNumbers.length&&item&&item.isEditing
-      ? rawClockNumbers
+      ? discountReservationClockEditorValues(item)
       : normalizeDiscountReservationClockNumbers(item);
+    const rawQuendooNumber=item&&(item.quendooNumber!==undefined||item.quendoo!==undefined||item.quendooNo!==undefined||item.quendooId!==undefined||item.quendooReservationNumber!==undefined)
+      ? (item.quendooNumber!==undefined?item.quendooNumber:(item.quendoo!==undefined?item.quendoo:(item.quendooNo!==undefined?item.quendooNo:(item.quendooId!==undefined?item.quendooId:item.quendooReservationNumber))))
+      : '';
     return {
       id:item&&item.id?String(item.id):uid()+'_dr_'+index,
       hotel:item&&item.hotel?String(item.hotel):'',
       reservationDate:item&&(item.reservationDate||item.createdDate||item.bookingDate||item.creationDate)?shortDisplayDate(item.reservationDate||item.createdDate||item.bookingDate||item.creationDate):'',
       clockNumber:clockNumbers.filter(Boolean).join(', '),
       clockNumbers,
+      quendooNumber:rawQuendooNumber===undefined||rawQuendooNumber===null?'':String(rawQuendooNumber).trim(),
       guestName:item&&(item.guestName||item.guest||item.names)?String(item.guestName||item.guest||item.names):'',
       checkInISO,
       checkOutISO,
@@ -3771,7 +3815,7 @@ function addDiscountReservation(){
   const list=ensureDiscountReservations();
   const now=new Date().toISOString();
   const nextNumber=list.reduce((max,item)=>Math.max(max,Number(item.autoNumber)||0),0)+1;
-  list.unshift({id:uid()+'_dr',hotel:'',reservationDate:formatDiscountReservationDateToday(),clockNumber:'',guestName:'',checkInISO:'',checkOutISO:'',checkIn:'',checkOut:'',roomType:'',price:'',discount:'',comment:'',customFields:{},isEditing:true,createdAt:now,updatedAt:now,autoNumber:nextNumber});
+  list.unshift({id:uid()+'_dr',hotel:'',reservationDate:formatDiscountReservationDateToday(),clockNumber:'',clockNumbers:[],quendooNumber:'',guestName:'',checkInISO:'',checkOutISO:'',checkIn:'',checkOut:'',roomType:'',price:'',discount:'',comment:'',customFields:{},isEditing:true,createdAt:now,updatedAt:now,autoNumber:nextNumber});
   saveStateSafe();
   renderDiscountReservations();
   window.setTimeout(()=>{
@@ -3797,7 +3841,7 @@ function updateDiscountReservation(id,field,value,options={}){
   if(field==='reservationDate')value=shortDisplayDate(value);
   if(field==='discount')value=normalizeDiscountReservationPercent(value);
   if(field==='clockNumber'){
-    const clocks=String(value||'').split(/[,\s;|]+/).map(clock=>clock.replace(/\D/g,'').slice(0,6)).filter(Boolean);
+    const clocks=compactDiscountReservationClockNumbers(String(value||'').split(/[,\s;|]+/));
     item.clockNumbers=[...new Set(clocks)];
     item.clockNumber=item.clockNumbers.join(', ');
   }else{
@@ -3814,8 +3858,8 @@ function updateDiscountReservationClock(id,index,value,options={}){
   if(!item||!item.isEditing)return;
   const clocks=normalizeDiscountReservationClockNumbers(item);
   while(clocks.length<=index)clocks.push('');
-  clocks[index]=String(value||'').replace(/\D/g,'').slice(0,6);
-  item.clockNumbers=clocks.map(clock=>String(clock||'').replace(/\D/g,'').slice(0,6));
+  clocks[index]=sanitizeDiscountReservationClockNumber(value);
+  item.clockNumbers=clocks.map(clock=>sanitizeDiscountReservationClockNumber(clock));
   syncDiscountReservationClockNumber(item);
   item.updatedAt=new Date().toISOString();
   if(options&&options.deferred)scheduleSilentStateSave();
@@ -3907,6 +3951,7 @@ function autoSizeDiscountReservationField(field){
   let maxCh=34;
   if(field.classList.contains('discount-reservation-created-date')){minCh=6;maxCh=8}
   if(field.classList.contains('discount-reservation-clock')){minCh=8;maxCh=12}
+  if(field.classList.contains('discount-reservation-quendoo')){minCh=10;maxCh=20}
   if(field.classList.contains('discount-reservation-room')){minCh=7;maxCh=16}
   if(field.classList.contains('discount-reservation-price')){minCh=8;maxCh=14}
   if(field.classList.contains('discount-reservation-discount')){minCh=5;maxCh=10}
@@ -9507,52 +9552,86 @@ window.setTimeout(autoLoadLatestJsonFromGoogleDriveOnStartup,60);
 
 
 
-function getDiscountReservationExportFieldLabel(field){
-  const key=field&&field.key?field.key:'';
-  if(key==='number')return '№';
-  if(key==='reservationDate')return 'Дата';
-  if(key==='clockNumber')return 'Clock';
-  if(key==='hotel')return 'Хотел';
-  if(key==='guestName')return 'Имена на госта';
-  if(key==='roomType')return 'Тип стая';
-  if(key==='price')return 'Цена';
-  if(key==='discount')return '%';
-  if(key==='comment')return 'Коментар';
-  return field&&field.label?field.label:'Колона';
+const DISCOUNT_RESERVATION_EXPORT_COLUMNS_FIXED=[
+  {key:'number',label:'Номер'},
+  {key:'reservationDate',label:'Дата'},
+  {key:'hotel',label:'Хотел'},
+  {key:'roomType',label:'Тип стая'},
+  {key:'checkIn',label:'ChIN'},
+  {key:'checkOut',label:'ChOUT'},
+  {key:'nights',label:'Нощ.'},
+  {key:'guestName',label:'Име на госта'},
+  {key:'price',label:'Цена'},
+  {key:'realPrice',label:'Реална цена'},
+  {key:'discount',label:'%'},
+  {key:'clockNumber',label:'Clock'},
+  {key:'quendooNumber',label:'Quendoo'},
+  {key:'comment',label:'Коментар'},
+  {key:'contact',label:'Телефон и имейл'}
+];
+function discountReservationCustomFieldValueByMatchers(item,matchers){
+  const layout=ensureDiscountReservationLayout();
+  const fields=(layout.fields||[]).filter(field=>field&&field.custom);
+  const field=fields.find(field=>{
+    const text=String((field.label||'')+' '+(field.key||''));
+    return matchers.some(pattern=>pattern.test(text));
+  });
+  if(!field||!item||!item.customFields||typeof item.customFields!=='object')return '';
+  const value=item.customFields[field.key];
+  return value===undefined||value===null?'':String(value).trim();
+}
+function discountReservationRealPriceText(item){
+  if(!item)return '';
+  const direct=item.realPrice!==undefined?item.realPrice:(item.actualPrice!==undefined?item.actualPrice:(item.netPrice!==undefined?item.netPrice:item.priceReal));
+  if(direct!==undefined&&direct!==null&&String(direct).trim())return String(direct).trim();
+  return discountReservationCustomFieldValueByMatchers(item,[/реална/i,/real/i,/actual/i]);
+}
+function discountReservationContactExportRole(field){
+  const existing=discountReservationContactRole(field);
+  if(existing)return existing;
+  const text=String((field&&field.label||'')+' '+(field&&field.key||'')).toLowerCase();
+  if(/имейл|мейл|e-?mail|mail/.test(text))return 'email';
+  if(/телефон|тел\.|phone|tel|gsm|мобилен/.test(text))return 'phone';
+  return '';
+}
+function discountReservationContactExportText(item){
+  const layout=ensureDiscountReservationLayout();
+  const fields=(layout.fields||[]).filter(field=>field&&field.custom);
+  const phoneField=fields.find(field=>discountReservationContactExportRole(field)==='phone')||null;
+  const emailField=fields.find(field=>discountReservationContactExportRole(field)==='email')||null;
+  const custom=item&&item.customFields&&typeof item.customFields==='object'?item.customFields:{};
+  const phone=phoneField&&custom[phoneField.key]!==undefined?String(custom[phoneField.key]).trim():'';
+  const email=emailField&&custom[emailField.key]!==undefined?String(custom[emailField.key]).trim():'';
+  return [phone,email].filter(Boolean).join('\n');
+}
+function discountReservationFixedExportValue(item,column,index){
+  const key=column&&column.key;
+  if(key==='number')return String(item.autoNumber||index+1);
+  if(key==='reservationDate')return shortDisplayDate(item.reservationDate||'');
+  if(key==='hotel')return item.hotel||'';
+  if(key==='roomType')return item.roomType||'';
+  if(key==='checkIn')return item.checkIn||'';
+  if(key==='checkOut')return item.checkOut||'';
+  if(key==='nights')return discountReservationNights(item)||'';
+  if(key==='guestName')return item.guestName||'';
+  if(key==='price')return item.price||'';
+  if(key==='realPrice')return discountReservationRealPriceText(item);
+  if(key==='discount')return item.discount||'';
+  if(key==='clockNumber')return discountReservationClockText(item);
+  if(key==='quendooNumber')return item.quendooNumber||'';
+  if(key==='comment')return item.comment||'';
+  if(key==='contact')return discountReservationContactExportText(item);
+  return '';
 }
 function buildDiscountReservationExportTable(){
-  const layout=ensureDiscountReservationLayout();
-  const fields=(layout.fields||[]).filter(field=>field&&field.visible!==false);
-  const headers=[];
-  fields.forEach(field=>{
-    if(field.key==='stay')headers.push('ChIN','ChOUT','Нощ.');
-    else headers.push(getDiscountReservationExportFieldLabel(field));
-  });
+  const headers=DISCOUNT_RESERVATION_EXPORT_COLUMNS_FIXED.map(column=>column.label);
   const exportItems=[...ensureDiscountReservations()].sort((a,b)=>{
     const an=Number(a.autoNumber)||0;
     const bn=Number(b.autoNumber)||0;
     if(an!==bn)return an-bn;
     return new Date(a.createdAt).getTime()-new Date(b.createdAt).getTime();
   });
-  const rows=exportItems.map((item,index)=>{
-    const row=[];
-    fields.forEach(field=>{
-      const key=field.key;
-      if(key==='number')row.push(String(item.autoNumber||index+1));
-      else if(key==='reservationDate')row.push(shortDisplayDate(item.reservationDate||''));
-      else if(key==='clockNumber')row.push(discountReservationClockText(item));
-      else if(key==='hotel')row.push(item.hotel||'');
-      else if(key==='guestName')row.push(item.guestName||'');
-      else if(key==='stay')row.push(item.checkIn||'',item.checkOut||'',discountReservationNights(item)||'');
-      else if(key==='roomType')row.push(item.roomType||'');
-      else if(key==='price')row.push(item.price||'');
-      else if(key==='discount')row.push(item.discount||'');
-      else if(key==='comment')row.push(item.comment||'');
-      else if(isDiscountReservationCustomLayoutKey(key))row.push(item.customFields&&item.customFields[key]!==undefined?String(item.customFields[key]):'');
-      else row.push('');
-    });
-    return row;
-  });
+  const rows=exportItems.map((item,index)=>DISCOUNT_RESERVATION_EXPORT_COLUMNS_FIXED.map(column=>discountReservationFixedExportValue(item,column,index)));
   return {headers,rows};
 }
 function discountReservationExportFileName(ext){
@@ -9560,14 +9639,33 @@ function discountReservationExportFileName(ext){
   const stamp=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   return `rezervacii-s-otstapki-${stamp}.${ext}`;
 }
+function discountReservationExportCellHTML(value){
+  return escapeHtml(value).replace(/\r?\n/g,'<br>');
+}
+function discountReservationExportStyles(){
+  return `<style>
+    @page{size:A4 landscape;margin:8mm}
+    body{font-family:Arial,"Segoe UI",sans-serif;color:#0f172a;margin:16px;background:#fff}
+    h1{font-size:18px;margin:0 0 6px}
+    .meta{font-size:11px;color:#64748b;margin-bottom:10px}
+    table.discount-reservations-export-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:9px}
+    table.discount-reservations-export-table th,
+    table.discount-reservations-export-table td{border:1px solid #cbd5e1;padding:4px 5px;vertical-align:top;line-height:1.25;word-break:break-word}
+    table.discount-reservations-export-table th{background:#eff6ff;color:#1e3a8a;font-weight:900;text-align:left}
+    table.discount-reservations-export-table td:nth-child(1),
+    table.discount-reservations-export-table td:nth-child(7),
+    table.discount-reservations-export-table td:nth-child(11){text-align:center}
+    @media print{body{margin:0} table.discount-reservations-export-table{font-size:8px}}
+  </style>`;
+}
 function discountReservationTableHTML(title){
   const table=buildDiscountReservationExportTable();
   const thead='<tr>'+table.headers.map(h=>`<th>${escapeHtml(h)}</th>`).join('')+'</tr>';
-  const tbody=table.rows.length?table.rows.map(row=>'<tr>'+row.map(cell=>`<td>${escapeHtml(cell)}</td>`).join('')+'</tr>').join(''):`<tr><td colspan="${Math.max(1,table.headers.length)}">Няма добавени резервации.</td></tr>`;
-  return `<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+  const tbody=table.rows.length?table.rows.map(row=>'<tr>'+row.map(cell=>`<td>${discountReservationExportCellHTML(cell)}</td>`).join('')+'</tr>').join(''):`<tr><td colspan="${Math.max(1,table.headers.length)}">Няма добавени резервации.</td></tr>`;
+  return `<table class="discount-reservations-export-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
 }
 function exportDiscountReservationsExcel(){
-  const html=`<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="assets/mobile.css" /></head><body>${discountReservationTableHTML('Резервации с отстъпки')}</body></html>`;
+  const html=`<!doctype html><html><head><meta charset="utf-8">${discountReservationExportStyles()}</head><body>${discountReservationTableHTML('Резервации с отстъпки')}</body></html>`;
   const blob=new Blob(['\ufeff'+html],{type:'application/vnd.ms-excel;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -9579,7 +9677,7 @@ function exportDiscountReservationsExcel(){
   URL.revokeObjectURL(url);
 }
 function exportDiscountReservationsPDF(){
-  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Резервации с отстъпки</title><link rel="stylesheet" href="assets/mobile.css" /></head><body><h1>Резервации с отстъпки</h1><div class="meta">Експорт: ${(new Date()).toLocaleString('bg-BG')}</div>${discountReservationTableHTML('Резервации с отстъпки')}<script>window.onload=function(){setTimeout(function(){window.print();},150)};<\/script></body></html>`;
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Резервации с отстъпки</title>${discountReservationExportStyles()}</head><body><h1>Резервации с отстъпки</h1><div class="meta">Експорт: ${(new Date()).toLocaleString('bg-BG')}</div>${discountReservationTableHTML('Резервации с отстъпки')}<script>window.onload=function(){setTimeout(function(){window.print();},150)};<\/script></body></html>`;
   const win=window.open('','_blank');
   if(win){win.document.open();win.document.write(html);win.document.close();return;}
   const blob=new Blob([html],{type:'text/html;charset=utf-8'});
@@ -9620,7 +9718,7 @@ function escapeAttr(value){return escapeHtml(value).replace(/`/g,'&#096;')}
 
 (function setupMobileAppShellV160(){
   const sectionTargetIds={
-    hotels:'hotelsSection',contracts:'contractsSection',tasks:'tasksSection',roomTypes:'roomTypesSection',prices:'pricesSection',ultra:'ultraSection',discounts:'discountsSection',email:'emailTableSection',emailTxt:'emailTxtSection',checklist:'checklistSection',cancellations:'cancellationsSection'
+    hotels:'hotelsSection',contracts:'contractsSection',tasks:'tasksSection',roomTypes:'roomTypesSection',prices:'pricesSection',ultra:'ultraSection',discounts:'discountsSection',discountReservations:'discountReservationsSection',form:'workFormSection',email:'emailTableSection',emailTxt:'emailTxtSection',checklist:'checklistSection',cancellations:'cancellationsSection'
   };
   function isMobile(){return window.matchMedia&&window.matchMedia('(max-width:950px)').matches}
   function closeMobileSheets(){document.body.classList.remove('mobile-sidebar-open','mobile-more-open')}
@@ -9666,6 +9764,12 @@ function escapeAttr(value){return escapeHtml(value).replace(/`/g,'&#096;')}
         document.body.classList.remove('mobile-more-open');
         document.body.classList.toggle('mobile-sidebar-open');
         setActiveNav('weeks');
+        return;
+      }
+      if(target==='more'){
+        document.body.classList.remove('mobile-sidebar-open');
+        document.body.classList.toggle('mobile-more-open');
+        setActiveNav('more');
         return;
       }
       openSectionMobile(target);
