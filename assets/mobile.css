@@ -6070,6 +6070,28 @@
     overflow:auto!important;
   }
 
+  .mobile-redesign-v1 .mobile-pwa-install{
+    position:fixed!important;
+    right:12px!important;
+    bottom:78px!important;
+    z-index:2210!important;
+    min-height:42px!important;
+    padding:10px 14px!important;
+    border:1px solid #9bd8d1!important;
+    border-radius:999px!important;
+    background:#0f5f65!important;
+    color:#fff!important;
+    box-shadow:0 14px 32px rgba(16,32,51,.24)!important;
+    font-size:13px!important;
+    font-weight:900!important;
+    line-height:1!important;
+  }
+
+  .mobile-redesign-v1 .mobile-pwa-install.hidden,
+  .mobile-auth-locked .mobile-pwa-install{
+    display:none!important;
+  }
+
   .mobile-redesign-v1.mobile-more-open .mobile-more-sheet{
     transform:translateY(0)!important;
   }
