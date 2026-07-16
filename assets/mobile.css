@@ -6250,3 +6250,34 @@
     width:100%!important;
   }
 }
+
+/* Mobile redesign v203 - embedded attendance form v14 */
+@media(max-width:950px){
+  .mobile-redesign-v1 #workFormEditor{
+    padding:0!important;
+  }
+
+  .mobile-redesign-v1 .work-form-embed-panel{
+    width:100%!important;
+    min-width:0!important;
+    overflow:hidden!important;
+    border:1px solid #d7e4f4!important;
+    border-radius:14px!important;
+    background:#fff!important;
+  }
+
+  .mobile-redesign-v1 .work-form-frame{
+    display:block!important;
+    width:100%!important;
+    min-width:0!important;
+    height:min(74vh,720px)!important;
+    border:0!important;
+    background:#f4f6f8!important;
+  }
+
+  .mobile-redesign-v1 #importWorkFormBackupBtn{
+    min-height:38px!important;
+    padding:8px 12px!important;
+    border-radius:12px!important;
+  }
+}

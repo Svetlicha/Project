@@ -1,4 +1,4 @@
-﻿/* ---- mobile script block 1 from v202 ---- */
+/* ---- mobile script block 1 from v202 ---- */
 (function setupRobustMobileBottomNavV165(){
   const sectionTargetIds={
     hotels:'hotelsSection',contracts:'contractsSection',tasks:'tasksSection',roomTypes:'roomTypesSection',prices:'pricesSection',ultra:'ultraSection',discounts:'discountsSection',discountReservations:'discountReservationsSection',form:'workFormSection',email:'emailSection',emailTxt:'emailTxtSection',checklist:'checklistSection',cancellations:'cancellationsSection'
@@ -96,235 +96,403 @@
   document.addEventListener('touchend',handle,true);
 })();
 
-const WORK_FORM_STORAGE_KEY='hotel_discount_history_work_form_v1';
-const WORK_FORM_MONTH_NAMES=['Януари','Февруари','Март','Април','Май','Юни','Юли','Август','Септември','Октомври','Ноември','Декември'];
-const WORK_FORM_WEEKDAYS=['Нд','Пн','Вт','Ср','Чт','Пт','Сб'];
-let workFormState=null;
+const ATTENDANCE_FORM_V14_STORAGE_KEY='attendance_month_form_weekly_v7';
 
-function workFormEscape(value){
-  return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+function normalizeAttendanceFormV14(input){
+  if(!input||typeof input!=='object')return {};
+  try{return JSON.parse(JSON.stringify(input));}
+  catch(e){return {};}
 }
-function defaultWorkFormState(){
-  const now=new Date();
-  return {
-    year:now.getFullYear(),
-    month:now.getMonth(),
-    colors:{work:'#eef7ff',rest:'#fff1d6'},
-    employees:Array.from({length:5},(_,index)=>({name:`Служител ${index+1}`,hireDate:''})),
-    rules:[],
-    entries:{}
-  };
+function attendanceFormV14RecordCount(input){
+  return input&&input.records&&typeof input.records==='object'?Object.keys(input.records).length:0;
 }
-function loadWorkFormState(){
-  if(workFormState)return workFormState;
-  try{
-    const parsed=JSON.parse(localStorage.getItem(WORK_FORM_STORAGE_KEY)||'null');
-    workFormState=parsed&&typeof parsed==='object'?parsed:defaultWorkFormState();
-  }catch(e){
-    workFormState=defaultWorkFormState();
+function attendanceFormV14KeyCount(input){
+  return input&&typeof input==='object'?Object.keys(input).length:0;
+}
+function attendanceFormV14UpdatedAt(input){
+  const value=Number(input&&input.updatedAt||0);
+  return Number.isFinite(value)?value:0;
+}
+function attendanceFormV14ObjectKeyCount(input){
+  return input&&typeof input==='object'?Object.keys(input).length:0;
+}
+function attendanceFormV14UserDataScore(input){
+  if(!input||typeof input!=='object')return 0;
+  let score=attendanceFormV14RecordCount(input)*1000;
+  score+=attendanceFormV14ObjectKeyCount(input.weeklyAssignments)*50;
+  score+=attendanceFormV14ObjectKeyCount(input.lockedDates)*25;
+  const defaultHotels=['Effect Algara Beach','Effect Grand Victoria','Effect Saint Mina','Villa Azura','Malina Residence'];
+  if(Array.isArray(input.employees)){
+    input.employees.forEach((emp,index)=>{
+      if(!emp||typeof emp!=='object')return;
+      const name=String(emp.name||'').trim();
+      if(name&&name!==`Служител ${index+1}`)score+=10;
+      if(emp.hireDate)score+=10;
+      if(emp.showHotel===false)score+=1;
+    });
   }
-  workFormState.colors={work:'#eef7ff',rest:'#fff1d6',...(workFormState.colors||{})};
-  workFormState.employees=Array.from({length:5},(_,index)=>({
-    name:workFormState.employees&&workFormState.employees[index]?workFormState.employees[index].name||`Служител ${index+1}`:`Служител ${index+1}`,
-    hireDate:workFormState.employees&&workFormState.employees[index]?workFormState.employees[index].hireDate||'':''
-  }));
-  workFormState.rules=Array.isArray(workFormState.rules)?workFormState.rules:[];
-  workFormState.entries=workFormState.entries&&typeof workFormState.entries==='object'?workFormState.entries:{};
-  return workFormState;
+  if(Array.isArray(input.hotels)){
+    if(input.hotels.length!==defaultHotels.length)score+=3;
+    input.hotels.forEach(hotel=>{if(!defaultHotels.includes(hotel))score+=3;});
+  }
+  if(input.department&&input.department!=='Резервации')score+=3;
+  if(Number(input.formScale||100)!==100)score+=1;
+  if(Number(input.cellSize||30)!==30)score+=1;
+  return score;
+}
+function attendanceFormV14HasUserData(input){
+  return attendanceFormV14UserDataScore(input)>0;
+}
+function pickBetterAttendanceFormV14State(left,right){
+  const a=normalizeAttendanceFormV14(left);
+  const b=normalizeAttendanceFormV14(right);
+  if(!attendanceFormV14KeyCount(a))return b;
+  if(!attendanceFormV14KeyCount(b))return a;
+  const at=Number(a.updatedAt||0);
+  const bt=Number(b.updatedAt||0);
+  if(bt>at)return b;
+  if(at>bt)return a;
+  const ar=attendanceFormV14RecordCount(a);
+  const br=attendanceFormV14RecordCount(b);
+  if(br>ar)return b;
+  return a;
+}
+function pickAttendanceFormV14ForImport(left,right){
+  const a=normalizeAttendanceFormV14(left);
+  const b=normalizeAttendanceFormV14(right);
+  if(!attendanceFormV14KeyCount(a))return b;
+  if(!attendanceFormV14KeyCount(b))return a;
+  const ar=attendanceFormV14RecordCount(a);
+  const br=attendanceFormV14RecordCount(b);
+  if(br>ar)return b;
+  if(ar>br)return a;
+  const at=Number(a.updatedAt||0);
+  const bt=Number(b.updatedAt||0);
+  if(bt>at)return b;
+  return a;
+}
+function pickAttendanceFormV14ForSync(left,right){
+  const a=normalizeAttendanceFormV14(left);
+  const b=normalizeAttendanceFormV14(right);
+  if(!attendanceFormV14KeyCount(a))return b;
+  if(!attendanceFormV14KeyCount(b))return a;
+  const at=attendanceFormV14UpdatedAt(a);
+  const bt=attendanceFormV14UpdatedAt(b);
+  const aScore=attendanceFormV14UserDataScore(a);
+  const bScore=attendanceFormV14UserDataScore(b);
+  if(bt>at)return (!bScore&&aScore)?a:b;
+  if(at>bt)return (!aScore&&bScore)?b:a;
+  if(bScore>aScore)return b;
+  if(aScore>bScore)return a;
+  const ar=attendanceFormV14RecordCount(a);
+  const br=attendanceFormV14RecordCount(b);
+  if(br>ar)return b;
+  return a;
+}
+function readLocalAttendanceFormV14State(){
+  try{
+    const raw=localStorage.getItem(ATTENDANCE_FORM_V14_STORAGE_KEY);
+    if(!raw)return {};
+    return normalizeAttendanceFormV14(JSON.parse(raw));
+  }catch(e){return {};}
+}
+function mergeAttendanceFormV14State(candidate,options={}){
+  if(!state)return {};
+  const current=normalizeAttendanceFormV14(state.attendanceFormV14);
+  let next=current;
+  const normalizedCandidate=normalizeAttendanceFormV14(candidate);
+  if(attendanceFormV14HasUserData(normalizedCandidate)||attendanceFormV14UpdatedAt(normalizedCandidate)>0){
+    next=pickAttendanceFormV14ForSync(next,normalizedCandidate);
+  }
+  if(JSON.stringify(current)!==JSON.stringify(next)){
+    state.attendanceFormV14=next;
+    if(options.markDirty&&typeof markGoogleAutosaveDirty==='function')markGoogleAutosaveDirty();
+  }
+  return normalizeAttendanceFormV14(state.attendanceFormV14);
+}
+function getEmbeddedWorkFormState(){
+  if(!state)return {};
+  const current=normalizeAttendanceFormV14(state.attendanceFormV14);
+  if(attendanceFormV14KeyCount(current))return current;
+  const legacyLocal=readLocalAttendanceFormV14State();
+  if(attendanceFormV14HasUserData(legacyLocal)){
+    state.attendanceFormV14=legacyLocal;
+    return normalizeAttendanceFormV14(state.attendanceFormV14);
+  }
+  return {};
+}
+function normalizeGoogleLoadedStatePreservingLocalForm(loadedState){
+  const localForm=normalizeAttendanceFormV14(state&&state.attendanceFormV14);
+  const next=normalizeState(loadedState);
+  const cloudForm=normalizeAttendanceFormV14(next.attendanceFormV14);
+  let mergedForm=cloudForm;
+  let preservedLocal=false;
+  if(!attendanceFormV14HasUserData(cloudForm)&&attendanceFormV14HasUserData(localForm)){
+    mergedForm=localForm;
+    preservedLocal=true;
+  }
+  if(attendanceFormV14KeyCount(mergedForm))next.attendanceFormV14=mergedForm;
+  return {state:next,preservedLocal};
+}
+function setEmbeddedWorkFormState(nextState,options={}){
+  if(!state)return;
+  if(options.force){
+    const next=normalizeAttendanceFormV14(nextState);
+    state.attendanceFormV14=next;
+    try{localStorage.setItem(ATTENDANCE_FORM_V14_STORAGE_KEY,JSON.stringify(next));}catch(e){}
+    if(typeof markGoogleAutosaveDirty==='function')markGoogleAutosaveDirty();
+    if(options.save)saveState({silent:true,skipWorkFormSync:true});
+    return;
+  }
+  mergeAttendanceFormV14State(nextState,{markDirty:true});
+  if(options.save)saveState({silent:true,skipWorkFormSync:true});
+}
+window.getEmbeddedWorkFormState=getEmbeddedWorkFormState;
+window.setEmbeddedWorkFormState=setEmbeddedWorkFormState;
+function applyWorkFormStateToFrame(){
+  const frame=document.getElementById('workFormFrame');
+  if(!frame||!frame.contentWindow)return false;
+  try{
+    const formState=getEmbeddedWorkFormState();
+    if(Object.keys(formState).length&&typeof frame.contentWindow.setAttendanceFormState==='function'){
+      frame.contentWindow.setAttendanceFormState(formState,{saveLocal:true,render:true});
+      return true;
+    }
+    if(!Object.keys(formState).length&&typeof frame.contentWindow.getAttendanceFormState==='function'){
+      const childState=frame.contentWindow.getAttendanceFormState();
+      if(childState&&Object.keys(childState).length&&(attendanceFormV14HasUserData(childState)||attendanceFormV14UpdatedAt(childState)>0))setEmbeddedWorkFormState(childState,{save:false});
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+function syncWorkFormStateFromFrame(){
+  const frame=document.getElementById('workFormFrame');
+  if(!frame||!frame.contentWindow){
+    return;
+  }
+  try{
+    if(typeof frame.contentWindow.getAttendanceFormState==='function'){
+      const childState=frame.contentWindow.getAttendanceFormState();
+      if(attendanceFormV14HasUserData(childState)||attendanceFormV14UpdatedAt(childState)>0){
+        state.attendanceFormV14=normalizeAttendanceFormV14(childState);
+        if(typeof markGoogleAutosaveDirty==='function')markGoogleAutosaveDirty();
+      }
+    }
+  }catch(e){
+  }
 }
 function saveWorkFormState(){
-  try{localStorage.setItem(WORK_FORM_STORAGE_KEY,JSON.stringify(loadWorkFormState()))}catch(e){}
+  const frame=document.getElementById('workFormFrame');
+  try{
+    if(frame&&frame.contentWindow&&typeof frame.contentWindow.saveState==='function')frame.contentWindow.saveState();
+  }catch(e){}
+  syncWorkFormStateFromFrame();
+  saveState({silent:true,skipWorkFormSync:true});
 }
-function workFormMonthKey(year,month){
-  return `${year}-${String(month+1).padStart(2,'0')}`;
-}
-function workFormISO(year,month,day){
-  return `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-}
-function workFormEntryKey(year,month,employeeIndex,day){
-  return `${workFormMonthKey(year,month)}|${employeeIndex}|${String(day).padStart(2,'0')}`;
-}
-function workFormDaysInMonth(year,month){
-  return new Date(year,month+1,0).getDate();
-}
-function workFormIsWeekend(year,month,day){
-  const weekday=new Date(year,month,day).getDay();
-  return weekday===0||weekday===6;
-}
-function workFormHotelForDate(employeeIndex,iso,entry){
-  if(entry&&entry.hotel)return entry.hotel;
-  const state=loadWorkFormState();
-  let hotel='';
-  state.rules.forEach(rule=>{
-    const appliesEmployee=rule.employeeIndex===''||rule.employeeIndex===undefined||Number(rule.employeeIndex)===employeeIndex;
-    if(appliesEmployee&&rule.from&&rule.to&&iso>=rule.from&&iso<=rule.to)hotel=rule.hotel||hotel;
-  });
-  return hotel;
-}
-function workFormUsedLeaveForEmployee(employeeIndex){
-  const state=loadWorkFormState();
-  return Object.entries(state.entries).reduce((total,[key,entry])=>{
-    const parts=key.split('|');
-    return Number(parts[1])===employeeIndex&&entry&&entry.value==='О'?total+1:total;
-  },0);
-}
-function workFormEarnedLeave(employee,year,month){
-  if(!employee.hireDate)return 0;
-  const hired=new Date(employee.hireDate+'T00:00:00');
-  const until=new Date(year,month+1,0);
-  if(Number.isNaN(hired.getTime())||hired>until)return 0;
-  const months=(until.getFullYear()-hired.getFullYear())*12+(until.getMonth()-hired.getMonth())+1;
-  return Math.max(0,months*1.6);
-}
-function renderWorkFormMonths(){
-  const state=loadWorkFormState();
-  const host=document.getElementById('workFormMonths');
-  if(!host)return;
-  host.innerHTML=WORK_FORM_MONTH_NAMES.map((name,index)=>
-    `<button class="small ${index===state.month?'active':''}" type="button" data-work-form-month="${index}">${name}</button>`
-  ).join('');
-}
-function renderWorkFormSettings(){
-  const state=loadWorkFormState();
-  const employeesHost=document.getElementById('workFormEmployees');
-  const rulesHost=document.getElementById('workFormRules');
-  const workColor=document.getElementById('workFormWorkColor');
-  const restColor=document.getElementById('workFormRestColor');
-  if(workColor)workColor.value=state.colors.work;
-  if(restColor)restColor.value=state.colors.rest;
-  if(employeesHost){
-    employeesHost.innerHTML=state.employees.map((employee,index)=>`
-      <div class="work-form-employee-row">
-        <span>${index+1}</span>
-        <input data-work-form-employee-name="${index}" type="text" value="${workFormEscape(employee.name)}" placeholder="Име" />
-        <input data-work-form-employee-hire="${index}" type="date" value="${workFormEscape(employee.hireDate)}" />
-      </div>
-    `).join('');
+function extractAttendanceFormV14FromBackup(input){
+  if(!input)return {};
+  let parsed=input;
+  if(typeof parsed==='string'){
+    try{parsed=JSON.parse(parsed);}catch(e){return {};}
   }
-  if(rulesHost){
-    const employeeOptions=['<option value="">Всички</option>',...state.employees.map((employee,index)=>`<option value="${index}">${workFormEscape(employee.name||`Служител ${index+1}`)}</option>`)].join('');
-    rulesHost.innerHTML=state.rules.map((rule,index)=>`
-      <div class="work-form-rule-row">
-        <select data-work-form-rule-employee="${index}">${employeeOptions}</select>
-        <input data-work-form-rule-from="${index}" type="date" value="${workFormEscape(rule.from||'')}" />
-        <input data-work-form-rule-to="${index}" type="date" value="${workFormEscape(rule.to||'')}" />
-        <input data-work-form-rule-hotel="${index}" type="text" value="${workFormEscape(rule.hotel||'')}" placeholder="Хотел" />
-        <button class="danger small" type="button" data-work-form-rule-remove="${index}">×</button>
-      </div>
-    `).join('')||'<div class="muted">Няма добавени периоди за хотел.</div>';
-    state.rules.forEach((rule,index)=>{
-      const select=rulesHost.querySelector(`[data-work-form-rule-employee="${index}"]`);
-      if(select)select.value=rule.employeeIndex??'';
-    });
+  const candidates=[];
+  const addCandidate=value=>{
+    if(!value)return;
+    if(typeof value==='string'){
+      try{candidates.push(JSON.parse(value));}catch(e){}
+      return;
+    }
+    if(typeof value==='object')candidates.push(value);
+  };
+  addCandidate(parsed.bestForm);
+  addCandidate(parsed.form);
+  addCandidate(parsed.formRaw);
+  addCandidate(parsed.attendanceFormV14);
+  addCandidate(parsed.mainStateAttendanceFormV14);
+  addCandidate(parsed.largeStateAttendanceFormV14);
+  if(parsed.state)addCandidate(parsed.state.attendanceFormV14);
+  if(parsed.records&&typeof parsed.records==='object')addCandidate(parsed);
+  return candidates.reduce((best,item)=>pickAttendanceFormV14ForImport(best,item),{});
+}
+function importWorkFormBackupPayload(input){
+  const next=extractAttendanceFormV14FromBackup(input);
+  if(!attendanceFormV14KeyCount(next)){
+    alert('Не намирам валидни данни за Формата в този backup файл.');
+    return false;
   }
+  setEmbeddedWorkFormState(next,{save:true,force:true});
+  const frame=document.getElementById('workFormFrame');
+  try{
+    if(frame&&frame.contentWindow&&typeof frame.contentWindow.setAttendanceFormState==='function'){
+      frame.contentWindow.setAttendanceFormState(next,{saveLocal:true,render:true});
+    }else{
+      applyWorkFormStateToFrame();
+    }
+  }catch(e){
+    applyWorkFormStateToFrame();
+  }
+  if(typeof markGoogleAutosaveDirty==='function')markGoogleAutosaveDirty();
+  saveState({silent:true,skipWorkFormSync:true});
+  alert('Backup-ът на Формата е импортнат: '+attendanceFormV14RecordCount(next)+' записа. Натисни "Запази" в раздел Форма, за да го качиш в Google Drive.');
+  return true;
 }
-function renderWorkFormTable(){
-  const state=loadWorkFormState();
-  const table=document.getElementById('workFormTable');
-  const summary=document.getElementById('workFormSummary');
-  if(!table)return;
-  const {year,month}=state;
-  const days=workFormDaysInMonth(year,month);
-  if(summary)summary.textContent=`${WORK_FORM_MONTH_NAMES[month]} ${year} · ${days} дни · 1.6 дни отпуск на месец`;
-  const dayHeaders=Array.from({length:days},(_,i)=>{
-    const day=i+1, weekend=workFormIsWeekend(year,month,day);
-    return `<th class="${weekend?'rest-day':'work-day'}" style="background:${weekend?state.colors.rest:state.colors.work}">${day}</th>`;
-  }).join('');
-  const weekdayHeaders=Array.from({length:days},(_,i)=>{
-    const day=i+1, weekend=workFormIsWeekend(year,month,day);
-    return `<th class="${weekend?'rest-day':'work-day'}" style="background:${weekend?state.colors.rest:state.colors.work}">${WORK_FORM_WEEKDAYS[new Date(year,month,day).getDay()]}</th>`;
-  }).join('');
-  const rows=state.employees.map((employee,employeeIndex)=>{
-    let hours=0, leaveDays=0;
-    const cells=Array.from({length:days},(_,i)=>{
-      const day=i+1, iso=workFormISO(year,month,day), key=workFormEntryKey(year,month,employeeIndex,day);
-      const entry=state.entries[key]||{};
-      const weekend=workFormIsWeekend(year,month,day);
-      const value=entry.value||'';
-      const hotel=workFormHotelForDate(employeeIndex,iso,entry);
-      if(value==='О')leaveDays+=1;
-      else if(value&&value!=='П')hours+=Number(value)||0;
-      return `<td class="${weekend?'rest-day':'work-day'}" style="background:${weekend?state.colors.rest:state.colors.work}">
-        <select data-work-form-cell-value="${key}">
-          <option value=""></option>
-          <option value="8">8</option>
-          <option value="4">4</option>
-          <option value="12">12</option>
-          <option value="О">О</option>
-          <option value="П">П</option>
-        </select>
-        <input data-work-form-cell-hotel="${key}" type="text" value="${workFormEscape(hotel)}" placeholder="Хотел" />
-      </td>`;
-    }).join('');
-    const earned=workFormEarnedLeave(employee,year,month);
-    const usedAll=workFormUsedLeaveForEmployee(employeeIndex);
-    const remaining=earned-usedAll;
-    return `<tr>
-      <th class="work-form-name">${workFormEscape(employee.name||`Служител ${employeeIndex+1}`)}</th>
-      ${cells}
-      <td class="work-form-total">${hours}</td>
-      <td class="work-form-total">${leaveDays}</td>
-      <td class="work-form-total">${earned.toFixed(1)}</td>
-      <td class="work-form-total">${remaining.toFixed(1)}</td>
-    </tr>`;
-  }).join('');
-  table.innerHTML=`<thead>
-    <tr><th class="work-form-name">Име</th>${dayHeaders}<th>Часове</th><th>О</th><th>Натруп.</th><th>Остава</th></tr>
-    <tr><th class="work-form-name"></th>${weekdayHeaders}<th></th><th></th><th></th><th></th></tr>
-  </thead><tbody>${rows}</tbody>`;
-  table.querySelectorAll('[data-work-form-cell-value]').forEach(select=>{
-    const entry=state.entries[select.dataset.workFormCellValue]||{};
-    select.value=entry.value||'';
-  });
+function importWorkFormBackupFile(event){
+  const file=event&&event.target&&event.target.files&&event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{importWorkFormBackupPayload(JSON.parse(reader.result));}
+    catch(error){alert('Неуспешен импорт на backup JSON.');}
+  };
+  reader.readAsText(file);
+  event.target.value='';
 }
-function bindWorkFormEvents(){
-  const state=loadWorkFormState();
-  document.querySelectorAll('[data-work-form-month]').forEach(btn=>{
-    btn.onclick=()=>{state.month=Number(btn.dataset.workFormMonth)||0;saveWorkFormState();renderWorkForm();};
-  });
-  const settingsToggle=document.getElementById('workFormSettingsToggle');
-  if(settingsToggle)settingsToggle.onclick=()=>document.getElementById('workFormSettings')?.classList.toggle('hidden');
-  document.querySelectorAll('[data-work-form-employee-name]').forEach(input=>{
-    input.oninput=()=>{state.employees[Number(input.dataset.workFormEmployeeName)].name=input.value;saveWorkFormState();};
-    input.onblur=()=>renderWorkForm();
-  });
-  document.querySelectorAll('[data-work-form-employee-hire]').forEach(input=>{
-    input.onchange=()=>{state.employees[Number(input.dataset.workFormEmployeeHire)].hireDate=input.value;saveWorkFormState();renderWorkForm();};
-  });
-  const workColor=document.getElementById('workFormWorkColor');
-  const restColor=document.getElementById('workFormRestColor');
-  if(workColor)workColor.oninput=()=>{state.colors.work=workColor.value;saveWorkFormState();renderWorkFormTable();bindWorkFormEvents();};
-  if(restColor)restColor.oninput=()=>{state.colors.rest=restColor.value;saveWorkFormState();renderWorkFormTable();bindWorkFormEvents();};
-  const addRule=document.getElementById('workFormAddRuleBtn');
-  if(addRule)addRule.onclick=()=>{state.rules.push({employeeIndex:'',from:'',to:'',hotel:''});saveWorkFormState();renderWorkForm();document.getElementById('workFormSettings')?.classList.remove('hidden');};
-  document.querySelectorAll('[data-work-form-rule-remove]').forEach(btn=>{
-    btn.onclick=()=>{state.rules.splice(Number(btn.dataset.workFormRuleRemove),1);saveWorkFormState();renderWorkForm();document.getElementById('workFormSettings')?.classList.remove('hidden');};
-  });
-  ['employee','from','to','hotel'].forEach(part=>{
-    document.querySelectorAll(`[data-work-form-rule-${part}]`).forEach(input=>{
-      input.onchange=()=>{const index=Number(input.dataset[`workFormRule${part[0].toUpperCase()+part.slice(1)}`]);state.rules[index][part==='employee'?'employeeIndex':part]=input.value;saveWorkFormState();renderWorkFormTable();bindWorkFormEvents();};
-      input.oninput=input.onchange;
-    });
-  });
-  document.querySelectorAll('[data-work-form-cell-value]').forEach(select=>{
-    select.onchange=()=>{const key=select.dataset.workFormCellValue;state.entries[key]={...(state.entries[key]||{}),value:select.value};saveWorkFormState();renderWorkFormTable();bindWorkFormEvents();};
-  });
-  document.querySelectorAll('[data-work-form-cell-hotel]').forEach(input=>{
-    input.oninput=()=>{const key=input.dataset.workFormCellHotel;state.entries[key]={...(state.entries[key]||{}),hotel:input.value};saveWorkFormState();};
-  });
+function decorateInlineWorkFormHtml(html){
+  if(!html||html.includes('cell-note-tooltip'))return html;
+  let next=html;
+  const noteMarkerCss=`
+    .cell-btn.has-note {
+      position: relative;
+      box-shadow: inset 0 -2px 0 rgba(185, 28, 28, 0.42);
+    }
+
+    .cell-btn.has-note::after {
+      content: "";
+      position: absolute;
+      right: 3px;
+      bottom: 2px;
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #dc2626;
+      box-shadow: 0 0 0 1px #ffffff, 0 1px 3px rgba(15, 23, 42, 0.28);
+      pointer-events: none;
+    }
+
+    .att-table .cell-btn.has-note::after {
+      width: clamp(5px, calc(var(--cell-size) * 0.15), 8px);
+      height: clamp(5px, calc(var(--cell-size) * 0.15), 8px);
+    }
+
+    .cell-note-tooltip {
+      position: fixed;
+      z-index: 10000;
+      width: max-content;
+      min-width: 0;
+      max-width: min(320px, calc(100vw - 24px));
+      max-height: min(42vh, 260px);
+      overflow: auto;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 100ms ease, transform 100ms ease;
+      padding: 7px 9px;
+      border: 1px solid #fecaca;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18);
+      color: #b91c1c;
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      text-align: left;
+    }
+
+    .cell-note-tooltip.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+`;
+  next=next.replace('\n    .cell-btn {\n',`${noteMarkerCss}\n    .cell-btn {\n`);
+  next=next.replace('      const locked = isDateLocked(dateString);\n\n      if (record.status === "work") {','      const locked = isDateLocked(dateString);\n      const noteText = record.note ? String(record.note).trim() : "";\n      const hasNote = !!noteText;\n      if (hasNote) cls += " has-note";\n      const noteAttrs = hasNote\n        ? ` data-note-text="${escapeAttr(noteText)}" onmouseenter="showCellNoteTooltip(event, this)" onmousemove="moveCellNoteTooltip(event)" onmouseleave="hideCellNoteTooltip()"`\n        : "";\n\n      if (record.status === "work") {');
+  next=next.replace('          class="${cls}" \n          title="','          class="${cls}" \n          ${noteAttrs}\n          title="');
+  next=next.replace('          title="${locked ? "Р”Р°С‚Р°С‚Р° Рµ Р·Р°РєР»СЋС‡РµРЅР°" : "РљР»РёРє: СЃРјСЏРЅР° РЅР° СЃС‚Р°С‚СѓСЃ | Р”РµСЃРµРЅ РєР»РёРє: РїРѕРґСЂРѕР±РЅР° СЂРµРґР°РєС†РёСЏ"}"\n          onclick="${clickHandler}"','          title="${hasNote ? escapeAttr(noteText) : (locked ? "Р”Р°С‚Р°С‚Р° Рµ Р·Р°РєР»СЋС‡РµРЅР°" : "РљР»РёРє: СЃРјСЏРЅР° РЅР° СЃС‚Р°С‚СѓСЃ | Р”РµСЃРµРЅ РєР»РёРє: РїРѕРґСЂРѕР±РЅР° СЂРµРґР°РєС†РёСЏ")}"\n          ${noteAttrs}\n          onclick="${clickHandler}"');
+  const noteTooltipScript=`
+    function ensureCellNoteTooltip() {
+      let tooltip = document.getElementById("cellNoteTooltip");
+      if (!tooltip) {
+        tooltip = document.createElement("div");
+        tooltip.id = "cellNoteTooltip";
+        tooltip.className = "cell-note-tooltip";
+        tooltip.setAttribute("aria-hidden", "true");
+        document.body.appendChild(tooltip);
+      }
+      return tooltip;
+    }
+
+    function showCellNoteTooltip(event, element) {
+      const note = element?.dataset?.noteText || "";
+      if (!note.trim()) return;
+
+      const tooltip = ensureCellNoteTooltip();
+      tooltip.textContent = note;
+      tooltip.classList.add("active");
+      tooltip.setAttribute("aria-hidden", "false");
+      moveCellNoteTooltip(event);
+    }
+
+    function moveCellNoteTooltip(event) {
+      const tooltip = document.getElementById("cellNoteTooltip");
+      if (!tooltip || !tooltip.classList.contains("active")) return;
+
+      const gap = 12;
+      const margin = 10;
+      const rect = tooltip.getBoundingClientRect();
+      const visibleBounds = getEmbeddedVisibleBounds();
+      let left = event.clientX + gap;
+      let top = event.clientY + gap;
+
+      if (left + rect.width > visibleBounds.width - margin) {
+        left = Math.max(margin, event.clientX - rect.width - gap);
+      }
+
+      if (top + rect.height > visibleBounds.height - margin) {
+        top = Math.max(margin, event.clientY - rect.height - gap);
+      }
+
+      tooltip.style.left = left + "px";
+      tooltip.style.top = top + "px";
+    }
+
+    function hideCellNoteTooltip() {
+      const tooltip = document.getElementById("cellNoteTooltip");
+      if (!tooltip) return;
+
+      tooltip.classList.remove("active");
+      tooltip.setAttribute("aria-hidden", "true");
+    }
+
+`;
+  next=next.replace('    function showLockedCellSummary(event, employeeIndex, dateString) {',`${noteTooltipScript}    function showLockedCellSummary(event, employeeIndex, dateString) {`);
+  return next;
 }
 function renderWorkForm(){
-  loadWorkFormState();
-  renderWorkFormMonths();
-  renderWorkFormSettings();
-  renderWorkFormTable();
-  bindWorkFormEvents();
-}
-
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded',()=>{if(document.getElementById('workFormTable'))renderWorkForm();});
-}else if(document.getElementById('workFormTable')){
-  renderWorkForm();
+  const frame=document.getElementById('workFormFrame');
+  if(!frame)return;
+  if(!frame.dataset.workFormBridgeBound){
+    frame.dataset.workFormBridgeBound='1';
+    frame.addEventListener('load',()=>applyWorkFormStateToFrame());
+  }
+  if(!frame.dataset.workFormSourceReady){
+    const inline=document.getElementById('inlineWorkFormHtml');
+    if(inline&&inline.textContent.trim()){
+      try{
+        frame.removeAttribute('src');
+        frame.srcdoc=decorateInlineWorkFormHtml(JSON.parse(inline.textContent));
+        frame.dataset.workFormSourceReady='inline';
+      }catch(e){
+        console.error('Inline work form load failed:',e);
+      }
+    }
+    if(!frame.dataset.workFormSourceReady){
+      frame.setAttribute('src','sections/prisastvena_forma_sedmichno_razpredelenie_v14.html');
+      frame.dataset.workFormSourceReady='file';
+    }
+  }
+  applyWorkFormStateToFrame();
 }
 
 const MOBILE_AUTH_USERNAME='svetlicha';
@@ -1064,6 +1232,7 @@ function setSectionOpen(section,isOpen){
 
   editor.classList.toggle('hidden',!isOpen);
   button.textContent=(isOpen?'▼ ':'▶ ')+config.label;
+  if(section==='form'&&isOpen)window.setTimeout(renderWorkForm,0);
 }
 
 function toggleSection(section){
@@ -1400,7 +1569,7 @@ function loadState(){
     if(raw){const parsed=JSON.parse(raw); if(parsed.weeks)return normalizeState(parsed)}
     for(const key of OLD_KEYS){const oldRaw=localStorage.getItem(key); if(oldRaw){const oldParsed=JSON.parse(oldRaw); if(oldParsed.weeks)return normalizeState(oldParsed)}}
   }catch(e){}
-  return {weeks:[],activeWeekId:null,uiSettings:normalizeUiSettings({}),ultraAllInclusive:normalizeUltraAllInclusive({}),emailTxt:normalizeEmailTxt({}),toMappingsLocked:false,toMappingHotels:[],tasksByDate:{},taskNotesByDate:{},tasksUi:normalizeTasksUi({}),discountReservations:[],sectionThemes:normalizeSectionThemes(getStoredSectionThemes()||{})};
+  return {weeks:[],activeWeekId:null,uiSettings:normalizeUiSettings({}),ultraAllInclusive:normalizeUltraAllInclusive({}),emailTxt:normalizeEmailTxt({}),toMappingsLocked:false,toMappingHotels:[],tasksByDate:{},taskNotesByDate:{},tasksUi:normalizeTasksUi({}),discountReservations:[],sectionThemes:normalizeSectionThemes(getStoredSectionThemes()||{}),attendanceFormV14:{}};
 }
 
 function clampNumber(value,min,max){
@@ -4106,7 +4275,7 @@ function normalizeState(input){
     if(!w.selectedContractsHotelId&&w.hotels[0])w.selectedContractsHotelId=w.hotels[0].id;
     w.hotels.forEach(h=>{if(!h.selectedSubsectionId&&h.subsections[0])h.selectedSubsectionId=h.subsections[0].id});
     return w;
-  }),activeWeekId:input.activeWeekId||null,uiSettings:normalizeUiSettings(input.uiSettings||{}),ultraAllInclusive:normalizeUltraAllInclusive(input.ultraAllInclusive||{}),emailTxt:normalizeEmailTxt(input.emailTxt||{}),toMappingsLocked:normalizeToMappingsLocked(input),toMappingHotels:normalizeToMappingHotels(input.toMappingHotels||input.roomTypeToMappingHotels||[],input),cancellationPolicies:normalizeCancellationPolicies(input.cancellationPolicies||input.cancellations||{}),tasksByDate:normalizeDailyTasks(input.tasksByDate||input.dailyTasks||{}),taskNotesByDate:normalizeDailyTaskNotes(input.taskNotesByDate||input.dailyTaskNotes||input.tasksNotesByDate||{}),tasksUi:normalizeTasksUi(input.tasksUi||{}),discountReservations:normalizeDiscountReservations(input.discountReservations||input.reservationsWithDiscounts||input.discountedReservations||[]),sectionThemes:normalizeSectionThemes(input.sectionThemes||input.sectionColors||getStoredSectionThemes()||{})};
+  }),activeWeekId:input.activeWeekId||null,uiSettings:normalizeUiSettings(input.uiSettings||{}),ultraAllInclusive:normalizeUltraAllInclusive(input.ultraAllInclusive||{}),emailTxt:normalizeEmailTxt(input.emailTxt||{}),toMappingsLocked:normalizeToMappingsLocked(input),toMappingHotels:normalizeToMappingHotels(input.toMappingHotels||input.roomTypeToMappingHotels||[],input),cancellationPolicies:normalizeCancellationPolicies(input.cancellationPolicies||input.cancellations||{}),tasksByDate:normalizeDailyTasks(input.tasksByDate||input.dailyTasks||{}),taskNotesByDate:normalizeDailyTaskNotes(input.taskNotesByDate||input.dailyTaskNotes||input.tasksNotesByDate||{}),tasksUi:normalizeTasksUi(input.tasksUi||{}),discountReservations:normalizeDiscountReservations(input.discountReservations||input.reservationsWithDiscounts||input.discountedReservations||[]),sectionThemes:normalizeSectionThemes(input.sectionThemes||input.sectionColors||getStoredSectionThemes()||{}),attendanceFormV14:normalizeAttendanceFormV14(input.attendanceFormV14||input.workFormV14||{})};
 }
 function normalizeHotels(hotels,week){
   const normalized=hotels.map((hotel,index)=>{
@@ -4435,6 +4604,7 @@ function hasLargeStateFallbackMarker(){
 }
 function saveState(options={}){
   const silent=!!(options&&options.silent);
+  if(!options.skipWorkFormSync)syncWorkFormStateFromFrame();
   state.activeWeekId=activeWeekId;
   const payload=JSON.stringify(state);
 
@@ -4456,8 +4626,8 @@ function saveState(options={}){
     }
   }
 }
-function saveStateSafe(){
-  try{saveState({silent:true});return true;}
+function saveStateSafe(options={}){
+  try{saveState({silent:true,...options});return true;}
   catch(error){console.warn('Local save skipped:',error);return false;}
 }
 let scheduledSilentSaveTimer=null;
@@ -7198,7 +7368,11 @@ function renderMain(){
   document.getElementById('deleteWeekBtn').addEventListener('click',()=>{if(weekOptionsMenu)weekOptionsMenu.classList.add('hidden');deleteWeek()});
 
   document.querySelectorAll('[data-section-save]').forEach(btn=>{
-    btn.addEventListener('click',()=>{if(btn.dataset.sectionSave==='contracts'){updateSelectedContractFromEditor({save:true});}saveJsonFromButton(btn);});
+    btn.addEventListener('click',()=>{
+      if(btn.dataset.sectionSave==='contracts')updateSelectedContractFromEditor({save:true});
+      if(btn.dataset.sectionSave==='workForm')saveWorkFormState();
+      saveJsonFromButton(btn);
+    });
   });
   document.querySelectorAll('[data-quick-section]').forEach(btn=>{
     btn.addEventListener('click',e=>{
@@ -7223,7 +7397,7 @@ function renderMain(){
 
   document.getElementById('toggleDiscountsBtn').addEventListener('click',()=>toggleSection('discounts'));
   document.getElementById('toggleDiscountReservationsBtn').addEventListener('click',()=>toggleSection('discountReservations'));
-  document.getElementById('toggleWorkFormBtn').addEventListener('click',()=>toggleSection('form'));
+  document.getElementById('toggleWorkFormBtn').addEventListener('click',()=>{toggleSection('form');if(sectionOpen.form)renderWorkForm();});
   document.getElementById('addDiscountReservationBtn').addEventListener('click',addDiscountReservation);
   document.getElementById('exportDiscountReservationsPdfBtn').addEventListener('click',exportDiscountReservationsPDF);
   document.getElementById('exportDiscountReservationsExcelBtn').addEventListener('click',exportDiscountReservationsExcel);
@@ -7240,6 +7414,12 @@ function renderMain(){
   if(copySubsectionDataBtn)copySubsectionDataBtn.addEventListener('click',copySubsectionDataFrom);
   const clearSubsectionDataBtn=document.getElementById('clearSubsectionDataBtn');
   if(clearSubsectionDataBtn)clearSubsectionDataBtn.addEventListener('click',clearSubsectionData);
+  const importWorkFormBackupBtn=document.getElementById('importWorkFormBackupBtn');
+  const workFormBackupInput=document.getElementById('workFormBackupInput');
+  if(importWorkFormBackupBtn&&workFormBackupInput){
+    importWorkFormBackupBtn.addEventListener('click',()=>workFormBackupInput.click());
+    workFormBackupInput.addEventListener('change',importWorkFormBackupFile);
+  }
   const copyDiscountTextBtn=document.getElementById('copyDiscountTextBtn');
   if(copyDiscountTextBtn)copyDiscountTextBtn.addEventListener('click',copyDiscountText);
   document.getElementById('deleteSubsectionBtn').addEventListener('click',deleteSubsection);
@@ -9164,6 +9344,7 @@ async function testGoogleSheetsSync(){
 }
 
 function syncVisibleEditorsBeforeGoogleSave(){
+  syncWorkFormStateFromFrame();
   const week=getActiveWeek&&getActiveWeek();
 
   const ultraBox=document.getElementById('ultraInfoBox');
@@ -9337,11 +9518,11 @@ function extractGoogleBackupState(payload){
   return candidate;
 }
 function applyGoogleBackupPayload(payload,label){
-  const restored=normalizeState(extractGoogleBackupState(payload));
-  state=restored;
+  const loaded=normalizeGoogleLoadedStatePreservingLocalForm(extractGoogleBackupState(payload));
+  state=loaded.state;
   activeWeekId=state.activeWeekId||(state.weeks[0]&&state.weeks[0].id)||null;
   cleanupOldHistoryKeys();
-  const localSaved=saveStateSafe();
+  const localSaved=saveStateSafe({skipWorkFormSync:true});
   applyRoomInfoDisplaySettings();
   captureAcceptedStateSnapshot({skipEditorSync:true});
   render();
@@ -9414,10 +9595,11 @@ async function loadFromGoogleSheets(){
     if(response.state.weeks.length===0&&state&&Array.isArray(state.weeks)&&state.weeks.length>0){
       throw new Error('Google Drive JSON е празен (0 седмици). Локалните данни са запазени и няма да бъдат заменени.');
     }
-    state=normalizeState(response.state);
+    const loaded=normalizeGoogleLoadedStatePreservingLocalForm(response.state);
+    state=loaded.state;
     activeWeekId=state.activeWeekId||(state.weeks[0]&&state.weeks[0].id)||null;
     cleanupOldHistoryKeys();
-    const localSaved=saveStateSafe();
+    const localSaved=saveStateSafe({skipWorkFormSync:true});
     applyRoomInfoDisplaySettings();
     captureAcceptedStateSnapshot({skipEditorSync:true});
     render();
@@ -9525,10 +9707,11 @@ async function autoLoadLatestJsonFromGoogleDriveOnStartup(){
         setGoogleSyncStatus('Google Drive JSON е празен (0 седмици). Локалните данни остават заредени.', 'warn');
         return;
       }
-      state=normalizeState(response.state);
+      const loaded=normalizeGoogleLoadedStatePreservingLocalForm(response.state);
+      state=loaded.state;
       activeWeekId=state.activeWeekId||(state.weeks[0]&&state.weeks[0].id)||null;
       cleanupOldHistoryKeys();
-      const localSaved=saveStateSafe();
+      const localSaved=saveStateSafe({skipWorkFormSync:true});
       applyRoomInfoDisplaySettings();
       captureAcceptedStateSnapshot({skipEditorSync:true});
       render();
@@ -9690,8 +9873,8 @@ function exportDiscountReservationsPDF(){
   a.remove();
   URL.revokeObjectURL(url);
 }
-function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='hotel-discount-history-backup.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
-function importData(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const imported=normalizeState(JSON.parse(reader.result));if(!imported.weeks||!Array.isArray(imported.weeks)){alert('Файлът не изглежда като валиден архив.');return}if(!confirm('Импортът ще замени текущата история в този браузър. Продължаваме ли?'))return;state=imported;activeWeekId=state.activeWeekId||(state.weeks[0]&&state.weeks[0].id)||null;cleanupOldHistoryKeys();saveState();captureAcceptedStateSnapshot({skipEditorSync:true});render()}catch(err){console.error(err);alert('Неуспешен импорт. Ако файлът е голям, причината често е запълнена памет от стари версии. Опитай пак с тази версия, която чисти старите ключове автоматично.')}};reader.readAsText(file);e.target.value=''}
+function exportData(){syncVisibleEditorsBeforeGoogleSave();const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='hotel-discount-history-backup.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
+function importData(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const imported=normalizeState(JSON.parse(reader.result));if(!imported.weeks||!Array.isArray(imported.weeks)){alert('Файлът не изглежда като валиден архив.');return}if(!confirm('Импортът ще замени текущата история в този браузър. Продължаваме ли?'))return;state=imported;activeWeekId=state.activeWeekId||(state.weeks[0]&&state.weeks[0].id)||null;cleanupOldHistoryKeys();saveState({skipWorkFormSync:true});captureAcceptedStateSnapshot({skipEditorSync:true});render()}catch(err){console.error(err);alert('Неуспешен импорт. Ако файлът е голям, причината често е запълнена памет от стари версии. Опитай пак с тази версия, която чисти старите ключове автоматично.')}};reader.readAsText(file);e.target.value=''}
 function escapeHtml(value){return String(value||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
 function escapeAttr(value){return escapeHtml(value).replace(/`/g,'&#096;')}
 
