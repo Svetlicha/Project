@@ -327,9 +327,9 @@ if(document.readyState==='loading'){
   renderWorkForm();
 }
 
-const MOBILE_AUTH_USERNAME='sv';
-const MOBILE_AUTH_PASSWORD_SHA256='35aec9393d5db13ccaea57a027ddd8f2428a42d5c3fe8bcfd919a36250a291c1';
-const MOBILE_AUTH_PASSWORD_FALLBACK_HASH='cc1663f5';
+const MOBILE_AUTH_USERNAME='svetlicha';
+const MOBILE_AUTH_PASSWORD_SHA256='ae3bb7d33e4c140746145e88afe7cac2e7c73a3c3a0a3b8f0ec0d773bb2daeec';
+const MOBILE_AUTH_PASSWORD_FALLBACK_HASH='1c966550';
 const MOBILE_AUTH_SESSION_KEY='hotel_discount_history_mobile_auth_session_v203';
 const MOBILE_AUTH_REMEMBER_USER_KEY='hotel_discount_history_mobile_auth_remember_user_v203';
 
