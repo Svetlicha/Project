@@ -5750,6 +5750,11 @@
     display:none!important;
   }
 
+  .mobile-redesign-v1 #mainPanel > div > .toolbar,
+  .mobile-redesign-v1 #mainPanel > div > .form-grid.no-print{
+    display:none!important;
+  }
+
   .mobile-redesign-v1 .section-title{
     display:grid!important;
     grid-template-columns:minmax(0,1fr) auto!important;
