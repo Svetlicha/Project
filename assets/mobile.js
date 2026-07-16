@@ -44,7 +44,7 @@
     if(target==='weeks'){
       document.body.classList.remove('mobile-more-open');
       document.body.classList.toggle('mobile-sidebar-open');
-      setActive('weeks');
+      setActive(document.querySelector('#mobileBottomNav button[data-mobile-target="weeks"]')?'weeks':'more');
       return;
     }
     if(target==='more'){
@@ -9915,7 +9915,7 @@ function escapeAttr(value){return escapeHtml(value).replace(/`/g,'&#096;')}
     toggle.type='button';
     toggle.className='mobile-weeks-guard-toggle';
     toggle.setAttribute('aria-expanded','false');
-    toggle.textContent='Отвори седмици и архив';
+    toggle.textContent='Отвори архив';
 
     const note=document.createElement('div');
     note.className='mobile-weeks-guard-note';
@@ -9926,7 +9926,7 @@ function escapeAttr(value){return escapeHtml(value).replace(/`/g,'&#096;')}
       panel.classList.toggle('hidden',!expanded);
       toggle.classList.toggle('active',expanded);
       toggle.setAttribute('aria-expanded',expanded?'true':'false');
-      toggle.textContent=expanded?'Скрий седмици и архив':'Отвори седмици и архив';
+      toggle.textContent=expanded?'Скрий архив':'Отвори архив';
     }
 
     toggle.addEventListener('click',()=>setExpanded(panel.classList.contains('hidden')));
@@ -9956,6 +9956,12 @@ function escapeAttr(value){return escapeHtml(value).replace(/`/g,'&#096;')}
     document.querySelectorAll('#mobileBottomNav button').forEach(btn=>btn.classList.toggle('active',btn.dataset.mobileTarget===target));
   }
   function openSectionMobile(section){
+    if(section==='weeks'){
+      document.body.classList.remove('mobile-more-open');
+      document.body.classList.toggle('mobile-sidebar-open');
+      setActiveNav(document.querySelector('#mobileBottomNav button[data-mobile-target="weeks"]')?'weeks':'more');
+      return;
+    }
     if(hiddenMobileSections.has(section))return;
     if(section==='nights'){
       closeMobileSheets();
